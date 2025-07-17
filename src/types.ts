@@ -5,20 +5,22 @@ export interface VideoInterface {
   size: number;
   duration: number;
   modifiedAt: Date;
-  type?: string;
+  type: string;
   url: string;
   thumbnail: string;
+}
+
+export interface DirectoryInterface {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
 }
 
 export interface RecursiveDirectoryInterface {
   name: string;
   directories: RecursiveDirectoryInterface[];
   files: VideoInterface[];
-}
-
-export interface DirectoryInterface {
-  name: string;
-  type: string;
 }
 
 export interface ScanVideosInterface {

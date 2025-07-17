@@ -10,13 +10,14 @@ export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
     const relativeFilePath = path.relative(videosDir, filepath)
     const stats = await fs.stat(filepath);
     const duration = await getDuration(filepath);
-    const thumbnail = await getThumbnail(relativeFilePath)
+    const thumbnail = await getThumbnail(filepath)
 
     return {
       id: generateShortId(path.relative(videosDir, filepath) + stats.mtimeMs),
       name: path.basename(filepath, extension),
       size: stats.size,
       modifiedAt: stats.mtime,
+      type: "video/mp4",
       duration,
       url: `/videos/${relativeFilePath}`,
       thumbnail
@@ -105,9 +106,12 @@ export const scanDirectory: scanDirectoryInterface = async (dir) => {
       const stats = await fs.stat(currentPath);
 
       if (stats.isDirectory() && path.basename(currentPath) !== '.cache' && await mediaChecker(currentPath)) {
+        const relativeFilePath = path.relative(videosDir, currentPath)
         data.push({
+          id: generateShortId(path.relative(videosDir, dir) + stats.mtimeMs),
           name: path.basename(currentPath),
           type: 'directory',
+          url: relativeFilePath,
         } as DirectoryInterface);
       } else if (item.toLowerCase().endsWith('.mp4')) {
         try {

@@ -63,15 +63,11 @@ export const getThumbnail = async (videoFullPath: string): Promise<string> => {
   const thumbPath = path.join(cacheDir, safeName);
 
   try {
-    if (!thumbnailExistsAndValid(thumbPath)) {
+    if (!thumbnailExistsAndValid(thumbPath))
       await generateThumbnail(videoFullPath, thumbPath);
-      console.log(`✅ Thumbnail created: ${safeName}`);
-    } else {
-      console.log(`🟢 Thumbnail already exists: ${safeName}`);
-    }
 
     const relativePath = path.relative(cacheDir, thumbPath)
-    
+
     return `/thumbnails/${relativePath}`;
   } catch (error: any) {
     console.error(`❌ Failed to create thumbnail for ${videoFullPath}: ${error.message}`);

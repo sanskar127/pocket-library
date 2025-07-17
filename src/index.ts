@@ -2,8 +2,8 @@ import express, { Express, Request, Response } from 'express';
 import fs from 'fs';
 import cors from 'cors';
 
-import { videosDir, cacheDir } from "./constants"
-import { scanDirectory, scanVideos } from './services';
+import { videosDir, cacheDir } from "./constants";
+import { scanDirectory } from './services';
 import path from 'path';
 
 const app: Express = express();
