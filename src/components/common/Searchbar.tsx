@@ -4,8 +4,8 @@ const Searchbar = () => {
   const [text, setText] = useState<string>("")
 
   return (
-    <form className='w-xl border border-primary py-1 gap-2 flex items-center'>
-      <input type="text" value={text} onChange={(e) => setText(e.target.value)} className='flex-1 pl-4 outline-0' disabled placeholder='Type here to search' />
+    <form className='w-xl border text-white border-primary py-1 gap-2 flex items-center'>
+      <input type="text" value={text} onChange={(e) => setText(e.target.value)} className='flex-1 pl-4 outline-0' placeholder='Type here to search' />
       {text && (
         <button className='' onClick={() => setText("")}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">

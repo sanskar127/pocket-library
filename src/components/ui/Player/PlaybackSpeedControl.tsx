@@ -7,33 +7,32 @@ interface Props {
 }
 
 const PlaybackSpeedControl: React.FC<Props> = ({ playbackRate, onChange }) => {
-  const [show, setShow] = useState<boolean>(false);
+  const [show, setShow] = useState(false);
+  const speeds = [0.5, 1, 1.25, 1.5, 2];
 
   return (
-    <div
-      className="relative inline-block"
-      onClick={() => setShow(prev => !prev)}
-    >
-      {show && (
-        <select
-          value={playbackRate}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-primary text-white text-sm shadow-lg p-2 focus:outline-none"
-        >
-          {[0.5, 1, 1.25, 1.5, 2].map((rate) => (
-            <option key={rate} value={rate}>
-              {rate}x
-            </option>
-          ))}
-        </select>
-      )}
-
+    <div className="relative inline-block text-white">
       <button
-        className="text-white text-2xl cursor-pointer hover:text-primary p-2 rounded-full transition duration-200"
+        onClick={() => setShow(prev => !prev)}
+        className="text-xl hover:text-primary p-2 rounded-full transition duration-200"
         aria-label="Change playback speed"
       >
         <SiSpeedtest />
       </button>
+
+      {show && (
+        <div className="absolute bottom-full mb-2 right-0 bg-black/90 text-sm rounded shadow-lg p-1 z-20 w-24">
+          {speeds.map(rate => (
+            <button
+              key={rate}
+              onClick={() => { onChange(rate); setShow(false); }}
+              className={`w-full text-left px-3 py-1 hover:bg-primary/30 ${playbackRate === rate ? 'text-primary font-semibold' : 'text-white'}`}
+            >
+              {rate}x
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

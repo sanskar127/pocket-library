@@ -1,8 +1,8 @@
-import Searchbar from '../ui/Searchbar'
+import Searchbar from './Searchbar'
 
 const Navbar = () => {
   return (
-    <nav className='flex items-center justify-center p-2'>
+    <nav className='flex items-center justify-center p-4'>
       <Searchbar/>
     </nav>
   )

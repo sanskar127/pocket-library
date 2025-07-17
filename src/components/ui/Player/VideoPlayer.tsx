@@ -1,35 +1,31 @@
-import { useCallback, useEffect, useRef, useState, type FC, type KeyboardEvent } from 'react';
+import {
+  useCallback, useEffect, useRef, useState, type FC, type KeyboardEvent
+} from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useVideoPlayer } from '../../../hooks/useVideoPlayer';
+import { useItems } from "../../../context/itemsContext";
+import type { VideoInterface } from "../../../types/types";
+
+// Icons
+import { IoMdArrowBack } from 'react-icons/io';
+import { FaExpand, FaCompress, FaRegSadTear } from 'react-icons/fa';
+import { IoIosPlay, IoIosPause, IoIosSkipBackward, IoIosSkipForward } from "react-icons/io";
+
+// External Components
 import ProgressBar from './ProgressBar';
 import VolumeControl from './VolumeControl';
 import TimeDisplay from './TimeDisplay';
-import FullscreenToggle from './FullscreenToggle';
 import PlaybackSpeedControl from './PlaybackSpeedControl';
-import { IoChevronBack, IoPauseCircleOutline, IoPlayCircleOutline } from "react-icons/io5";
-import { useItems } from "../../../context/itemsContext"
-import type { VideoInterface } from "../../../types/types"
-import { useNavigate } from 'react-router-dom';
-
 
 const VideoPlayer: FC<{ id: string | unknown }> = ({ id }) => {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const { items } = useItems()
-  const entry = (items as VideoInterface[]).find(item => item.id === id)
-  const navigate = useNavigate()
-  const [showControls, setShowControls] = useState(true);
+  const { items } = useItems();
+  const entry = (items as VideoInterface[]).find(item => item.id === id);
+  const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const resetHideTimeout = useCallback(() => {
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-    }
-
-    setShowControls(true); // Show controls on activity
-
-    hideTimeoutRef.current = setTimeout(() => {
-      setShowControls(false); // Hide after delay
-    }, 3000); // 3 seconds
-  }, []);
+  const [showControls, setShowControls] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   const {
     videoRef,
@@ -46,119 +42,149 @@ const VideoPlayer: FC<{ id: string | unknown }> = ({ id }) => {
     setPlaybackRate,
   } = useVideoPlayer();
 
-  // Focus the container when the component mounts
-  useEffect(() => {
-    if (containerRef.current) containerRef.current.focus()
-    const handleUserActivity = () => resetHideTimeout();
+  const resetHideTimeout = useCallback(() => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    setShowControls(true);
+    hideTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
+  }, []);
 
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    container.focus();
 
-    container.addEventListener('mousemove', handleUserActivity);
-    container.addEventListener('click', handleUserActivity);
-    container.addEventListener('keydown', handleUserActivity);
-
-    // Initialize hide timer
+    const handleActivity = () => resetHideTimeout();
+    container.addEventListener('mousemove', handleActivity);
+    container.addEventListener('click', handleActivity);
+    container.addEventListener('keydown', handleActivity);
     resetHideTimeout();
 
     return () => {
-      container.removeEventListener('mousemove', handleUserActivity);
-      container.removeEventListener('click', handleUserActivity);
-      container.removeEventListener('keydown', handleUserActivity);
+      container.removeEventListener('mousemove', handleActivity);
+      container.removeEventListener('click', handleActivity);
+      container.removeEventListener('keydown', handleActivity);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
   }, [resetHideTimeout]);
 
-  const handleInputs = (event: KeyboardEvent<HTMLDivElement>) => { // Changed type to HTMLDivElement
-    // let newVolume: number; // Declare variables to hold the calculated new values
-    let newTime: number;
+  const handleKeyboardShortcuts = (event: KeyboardEvent<HTMLDivElement>) => {
     switch (event.key) {
-      case ' ':
-        event.preventDefault(); // Prevent default spacebar behavior (e.g., page scroll)
-        togglePlay();
-        break;
-
-      case 'f':
-        event.preventDefault(); // Prevent any default 'f' key behavior
-        toggleFullscreen();
-        break;
-
-      case 'ArrowRight': // Seek forward
-        event.preventDefault();
-        // Calculate new time BEFORE passing to setCurrentTime
-        newTime = Math.min(duration, currentTime + 5);
-        setCurrentTime(newTime);
-        break;
-
-      case 'ArrowLeft': // Seek backward
-        event.preventDefault();
-        // Calculate new time BEFORE passing to setCurrentTime
-        newTime = Math.max(0, currentTime - 5);
-        setCurrentTime(newTime);
-        break;
-
-      case 'ArrowUp':
-        event.preventDefault();
-        changeVolume(Math.min(1, volume + 0.1)); // Increase volume by 10%
-        break;
-
-      case 'ArrowDown':
-        event.preventDefault();
-        changeVolume(Math.max(0, volume - 0.1)); // Decrease volume by 10%
-        break;
-
-      // Add more cases for other shortcuts if needed
-      // For example, 'm' for mute/unmute
+      case ' ': event.preventDefault(); togglePlay(); break;
+      case 'f': event.preventDefault(); toggleFullscreen(); break;
+      case 'ArrowRight': setCurrentTime(Math.min(duration, currentTime + 5)); break;
+      case 'ArrowLeft': setCurrentTime(Math.max(0, currentTime - 5)); break;
+      case 'ArrowUp': changeVolume(Math.min(1, volume + 0.1)); break;
+      case 'ArrowDown': changeVolume(Math.max(0, volume - 0.1)); break;
     }
   };
 
-  if (!entry) {
-    return <div>Video not found</div>  // Handle case when video is not found
-  }
+  if (!entry) return (
+    <div className="flex items-center justify-center min-h-screen bg-dark text-white px-4">
+      <div className="text-center">
+        <FaRegSadTear className="text-6xl text-primary mx-auto mb-6" />
+        <h1 className="text-3xl font-bold mb-2">Video Not Found</h1>
+        <p className="text-lg text-gray-400 mb-6">The video you're looking for doesn't exist or has been removed.</p>
+        <button
+          onClick={() => navigate(-1)}
+          className="bg-primary/90 hover:bg-primary text-white px-6 py-2 rounded transition"
+        >
+          Go Back Home
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full max-w-screen max-h-screen relative flex justify-center items-center ${showControls ? "cursor-auto" : "cursor-none"}`}
       tabIndex={0}
-      onKeyDown={handleInputs}
-      autoFocus
+      onKeyDown={handleKeyboardShortcuts}
+      className={`relative w-full h-full bg-black outline-none ${showControls ? 'cursor-auto' : 'cursor-none'}`}
     >
+      {/* Video Element */}
       <video
         ref={videoRef}
         src={entry.url}
-        // poster={poster}
         autoPlay
-        // Added 'object-contain' and 'h-full' to ensure the video scales within the container
         className="w-full h-full object-contain"
         controls={false}
         onClick={togglePlay}
-      >
-      </video>
+        onDoubleClick={toggleFullscreen}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => setIsBuffering(false)}
+        onCanPlay={() => setIsBuffering(false)}
+      />
 
-      {/* Title, Details Header */}
-      <div className={`w-full absolute  ${showControls ? 'opacity-100' : 'opacity-0'} top-0 z-10 bg-gradient-to-b from-black/90 to-black/10 backdrop-blur-xs p-4 flex items-center gap-2 text-white`}>
-        <button onClick={() => navigate(-1)} className='text-3xl cursor-pointer hover:text-primary'><IoChevronBack /></button>
-        <h2 className="text-2xl font-semibold">{entry.name}</h2>
+      {/* Top Controls */}
+      <div className={`absolute top-0 left-0 w-full flex justify-between items-center px-5 py-3 bg-gradient-to-b from-black/90 to-transparent transition-opacity duration-300 z-10 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="flex items-center gap-4 text-white">
+          <button onClick={() => navigate(-1)} className="text-2xl hover:text-primary">
+            <IoMdArrowBack />
+          </button>
+          <h2 className="text-lg md:text-2xl font-semibold">{entry.name}</h2>
+        </div>
+        <div className="hidden md:block">
+        </div>
       </div>
 
-      {/* Controls at Footer */}
-      <div className={`${showControls ? 'opacity-100' : 'opacity-0'} w-full flex flex-col gap-2 px-6 pb-1 pt-4 bg-gradient-to-t from-black/90 to-black/10 backdrop-blur-xs text-white absolute bottom-0 z-10`}>
+      {/* Center Actions */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+        {/* Wrapper with pointer events to allow button interaction */}
+        <div className={`flex items-center gap-10 ${showControls ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300 pointer-events-auto`}>
+          {/* Skip Back */}
+          <button
+            onClick={() => setCurrentTime(Math.max(0, currentTime - 10))}
+            className="text-4xl text-white hover:text-primary"
+            aria-label="Skip back 10 seconds"
+          >
+            <IoIosSkipBackward />
+          </button>
+
+          {/* Play/Pause */}
+          <button
+            onClick={togglePlay}
+            className="text-white text-6xl md:text-7xl hover:text-primary"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <IoIosPause /> : <IoIosPlay />}
+          </button>
+
+          {/* Skip Forward */}
+          <button
+            onClick={() => setCurrentTime(Math.min(duration, currentTime + 10))}
+            className="text-4xl text-white hover:text-primary"
+            aria-label="Skip forward 10 seconds"
+          >
+            <IoIosSkipForward />
+          </button>
+        </div>
+
+        {/* Buffering Spinner */}
+        {isBuffering && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Controls */}
+      <div className={`absolute bottom-0 left-0 right-0 px-6 pb-3 pt-4 bg-gradient-to-t from-black/90 to-transparent z-10 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
         <ProgressBar currentTime={currentTime} duration={duration} onSeek={setCurrentTime} />
-
-        <div className="flex justify-between items-center">
-          <div className='flex items-center gap-4'>
-            <button className='text-3xl cursor-pointer hover:text-primary' onClick={togglePlay}>
-              {isPlaying ? <IoPauseCircleOutline /> : <IoPlayCircleOutline />}
-            </button>
-
-            <VolumeControl volume={volume} onChange={changeVolume} />
+        <div className="mt-3 flex justify-between items-center text-white text-sm">
+          {/* Left Controls */}
+          <div className="flex items-center gap-5">
             <TimeDisplay currentTime={currentTime} duration={duration} />
+            <VolumeControl volume={volume} onChange={changeVolume} />
           </div>
 
-          <div className='flex items-center gap-4'>
-            <PlaybackSpeedControl playbackRate={playbackRate} onChange={setPlaybackRate} />
-            <FullscreenToggle isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
+          {/* Right Controls */}
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-2">
+              <PlaybackSpeedControl playbackRate={playbackRate} onChange={setPlaybackRate} />
+            </div>
+            <button onClick={toggleFullscreen} className="text-xl hover:text-primary transition">
+              {isFullscreen ? <FaCompress /> : <FaExpand />}
+            </button>
           </div>
         </div>
       </div>

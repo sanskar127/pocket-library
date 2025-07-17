@@ -4,6 +4,7 @@ import Video from "../components/common/Video";
 import { useItems } from "../context/itemsContext";
 import { useEffect } from "react";
 import type { DirectoryInterface, VideoInterface } from "../types/types";
+import Navbar from "../components/common/Navbar";
 
 const Home = () => {
   const { items, setItems } = useItems()
@@ -18,8 +19,9 @@ const Home = () => {
   }, [location.pathname, setItems]);
 
   return (
-    <div className="w-full min-h-screen bg-dark text-foreground container mx-auto px-4 py-6">
-      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="w-full min-h-screen bg-dark text-foregroundY">
+      <Navbar />
+      <div className="grid gap-6 container mx-auto px-4 py-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map(item => {
           if (item.type === 'directory')
             return <Directory key={item.id} details={item as DirectoryInterface} />

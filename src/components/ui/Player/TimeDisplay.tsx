@@ -6,12 +6,10 @@ interface Props {
   duration: number;
 }
 
-const TimeDisplay: React.FC<Props> = ({ currentTime, duration }) => {
-  return (
-    <span className="text-sm text-white">
-      {formatTime(currentTime)} / {formatTime(duration)}
-    </span>
-  );
-};
+const TimeDisplay: React.FC<Props> = ({ currentTime, duration }) => (
+  <span className="text-sm text-white font-mono tracking-wider">
+    {formatTime(currentTime)} / {formatTime(duration)}
+  </span>
+);
 
 export default TimeDisplay;
