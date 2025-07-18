@@ -1,18 +1,19 @@
-import crypto from 'crypto';
-import fs from 'fs'
-import { readdir, stat } from 'fs/promises'
-import os from 'os'
-import ffmpeg from 'fluent-ffmpeg';
-import path from 'path';
 import { cacheDir, videosDir } from './constants';
-import qrcode from 'qrcode-terminal';
 import { ScanVideosInterface } from './types';
+import { readdir, stat } from 'fs/promises';
+import qrcode from 'qrcode-terminal';
+import ffmpeg from 'fluent-ffmpeg';
+import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
 
 // Sanitize file names for Windows (and general safety)
 const sanitizeFileName = (name: string): string => {
   return name.replace(/[^a-zA-Z0-9\-_.]/g, '_');
-}
+};
 
+// Generate short ID from a given input
 export const generateShortId = (input: string): string => {
   return crypto
     .createHash('sha1')
@@ -21,7 +22,7 @@ export const generateShortId = (input: string): string => {
     .replace(/[^a-z0-9]/gi, '')
     .toLowerCase()
     .slice(0, 8);
-}
+};
 
 // Get video duration in seconds
 export const getDuration = (videoFullPath: string): Promise<number> => {
@@ -33,25 +34,24 @@ export const getDuration = (videoFullPath: string): Promise<number> => {
   });
 };
 
-
+// Check if the directory contains any media (video files)
 export const mediaChecker = async (dir: string): Promise<boolean> => {
   const entries = await readdir(dir, { withFileTypes: true });
 
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
-
     if (entry.isDirectory()) {
       const found = await mediaChecker(fullPath);
-      if (found) return true; // Stop early if found
+      if (found) return true;
     } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.mp4') {
       return true;
     }
   }
 
   return false;
-}
+};
 
-// Check if thumbnail exists and is valid (e.g., >1KB)
+// Check if thumbnail exists and is valid (size >1KB)
 const thumbnailExistsAndValid = (filePath: string): boolean => {
   try {
     const stats = fs.statSync(filePath);
@@ -61,7 +61,7 @@ const thumbnailExistsAndValid = (filePath: string): boolean => {
   }
 };
 
-// Function to get the local IP address of the machine
+// Retrieve local machine's IP address
 export const getLocalIPAddress = (): string => {
   const networkInterfaces = os.networkInterfaces();
   for (let interfaceName in networkInterfaces) {
@@ -72,7 +72,7 @@ export const getLocalIPAddress = (): string => {
     }
   }
   return '127.0.0.1';
-}
+};
 
 // Generate thumbnail using ffmpeg
 const generateThumbnail = (videoPath: string, outputPath: string): Promise<void> => {
@@ -93,16 +93,17 @@ const generateThumbnail = (videoPath: string, outputPath: string): Promise<void>
   });
 };
 
+// Get thumbnail for a video, creating it if necessary
 export const getThumbnail = async (videoFullPath: string): Promise<string> => {
   const safeName = sanitizeFileName(path.basename(videoFullPath)).replace(/\.mp4$/i, '.webp');
   const thumbPath = path.join(cacheDir, safeName);
 
   try {
-    if (!thumbnailExistsAndValid(thumbPath))
+    if (!thumbnailExistsAndValid(thumbPath)) {
       await generateThumbnail(videoFullPath, thumbPath);
+    }
 
-    const relativePath = path.relative(cacheDir, thumbPath)
-
+    const relativePath = path.relative(cacheDir, thumbPath);
     return `/thumbnails/${relativePath}`;
   } catch (error: any) {
     console.error(`❌ Failed to create thumbnail for ${videoFullPath}: ${error.message}`);
@@ -110,20 +111,20 @@ export const getThumbnail = async (videoFullPath: string): Promise<string> => {
   }
 };
 
-// Retrieve Videos from current Directory
+// Retrieve video details and create a response object for a video file
 export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
   try {
     const relativeFilePath = path.relative(videosDir, filepath).replace(/\\/g, '/');
     const stats = await stat(filepath);
     const duration = await getDuration(filepath);
-    const thumbnail = await getThumbnail(filepath)
+    const thumbnail = await getThumbnail(filepath);
 
     return {
       id: generateShortId(relativeFilePath + stats.mtimeMs),
       name: path.basename(filepath, extension),
       size: stats.size,
       modifiedAt: stats.mtime,
-      type: "video/mp4",
+      type: 'video/mp4',
       duration,
       url: `/videos/${relativeFilePath}`,
       thumbnail
@@ -134,6 +135,7 @@ export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
   }
 };
 
+// Generate QR code
 export const generateQrCode = (data: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     qrcode.generate(data, { small: true }, (qr) => {
@@ -144,4 +146,4 @@ export const generateQrCode = (data: string): Promise<string> => {
       }
     });
   });
-}
+};

@@ -1,7 +1,7 @@
 import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, mediaChecker } from './utils';
 import { DirectoryInterface, requestBodyInterface, responseType } from './types';
 import express, { Express, Request, Response } from 'express';
-import { videosDir, cacheDir } from "./constants";
+import { videosDir, cacheDir } from './constants';
 import { existsSync, mkdirSync } from 'fs';
 import fs from 'fs/promises';
 import cors from 'cors';
@@ -9,15 +9,18 @@ import path from 'path';
 
 const app: Express = express();
 const port: number = 3000;
-app.use(express.json())
+
+app.use(express.json());
 app.use(cors());
 
-app.post('/api/videos', async (request: Request, response: Response) => {
-    const { dir, limit } = request.body as requestBodyInterface
+// Utility to check and return the limit validation result
+const validateLimit = (limit: number): boolean => !isNaN(limit) && limit > 0;
 
-    // Ensure the limit is a valid number
-    if (isNaN(limit) || limit <= 0) {
-        response.status(400).json({ error: 'Invalid limit' });
+app.post('/api/videos', async (request: Request, response: Response) => {
+    const { dir, limit } = request.body as requestBodyInterface;
+
+    if (!validateLimit(limit)) {
+        return response.status(400).json({ error: 'Invalid limit' });
     }
 
     const data: responseType[] = [];
@@ -25,29 +28,25 @@ app.post('/api/videos', async (request: Request, response: Response) => {
 
     try {
         const items = await fs.readdir(navigationPath);
-
-        // Iterate through chunk items
-        for (const item of items) {
+        
+        // Process directories and videos concurrently
+        const promises = items.map(async (item) => {
             const currentPath = path.join(navigationPath, item);
             const stats = await fs.stat(currentPath);
+            const extname = path.extname(item).toLowerCase();
 
-            // Check if the item is a directory and process accordingly
-            try {
-                if (stats.isDirectory() && path.basename(currentPath) !== '.cache' && await mediaChecker(currentPath)) {
-                    const relativeFilePath = path.relative(videosDir, currentPath).replace(/\\/g, '/');
-                    data.push({
-                        id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
-                        name: path.basename(currentPath),
-                        type: 'directory',
-                        url: relativeFilePath,
-                    } as DirectoryInterface);
-                }
-            } catch (mediaError) {
-                console.error(`Error checking media at ${currentPath}:`, mediaError);
+            // Check if the item is a directory
+            if (stats.isDirectory() && path.basename(currentPath) !== '.cache' && await mediaChecker(currentPath)) {
+                const relativeFilePath = path.relative(videosDir, currentPath).replace(/\\/g, '/');
+                data.push({
+                    id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
+                    name: path.basename(currentPath),
+                    type: 'directory',
+                    url: relativeFilePath,
+                } as DirectoryInterface);
             }
 
-            // Check if the item is a video and process
-            const extname = path.extname(item).toLowerCase();
+            // Check if the item is a video file (.mp4)
             if (extname === '.mp4') {
                 try {
                     const video = await scanVideos(currentPath, '.mp4');
@@ -58,27 +57,32 @@ app.post('/api/videos', async (request: Request, response: Response) => {
                     console.error(`Error scanning video at ${currentPath}:`, videoError);
                 }
             }
-        }
+        });
 
-        response.status(200).json(data)
-
+        await Promise.all(promises);  // Wait for all items to be processed concurrently
+        response.status(200).json(data);
     } catch (error) {
         console.error(`Error scanning directory ${navigationPath}:`, error);
+        response.status(500).json({ error: 'Internal Server Error' });
     }
-})
+});
 
-app.use('/', express.static(__dirname))
-app.use('/videos', express.static(videosDir))
-app.use('/thumbnails', express.static(cacheDir))
+// Static file serving
+app.use('/', express.static(__dirname));
+app.use('/videos', express.static(videosDir));
+app.use('/thumbnails', express.static(cacheDir));
 
 app.listen(port, async () => {
     // Create cache dir if missing
-    if (!existsSync(cacheDir))
-        mkdirSync(cacheDir, { recursive: true });
+    if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
 
-    const url: string = `http://${getLocalIPAddress()}:${port}`
+    const url: string = `http://${getLocalIPAddress()}:${port}`;
 
-    const qr = await generateQrCode(url)
-
-    console.log(`Pocket Media Library File server is Active!\n1. Either you can scan qr code from your mobile device \n${qr} \nOR \nYou can directly enter the host URL \n\nHost: ${url}`)
-})
+    try {
+        const qr = await generateQrCode(url);
+        console.log(`Pocket Media Library File server is Active!\n1. Either you can scan qr code from your mobile device \n${qr} \nOR \nYou can directly enter the host URL \n\nHost: ${url}`);
+    } catch (qrError) {
+        console.error('Error generating QR code:', qrError);
+        process.exit(1)
+    }
+});
