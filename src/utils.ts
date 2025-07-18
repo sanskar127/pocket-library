@@ -1,9 +1,12 @@
 import crypto from 'crypto';
 import fs from 'fs'
+import { readdir, stat } from 'fs/promises'
 import os from 'os'
 import ffmpeg from 'fluent-ffmpeg';
 import path from 'path';
-import { cacheDir } from './constants';
+import { cacheDir, videosDir } from './constants';
+import qrcode from 'qrcode-terminal';
+import { ScanVideosInterface } from './types';
 
 // Sanitize file names for Windows (and general safety)
 const sanitizeFileName = (name: string): string => {
@@ -29,6 +32,24 @@ export const getDuration = (videoFullPath: string): Promise<number> => {
     });
   });
 };
+
+
+export const mediaChecker = async (dir: string): Promise<boolean> => {
+  const entries = await readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      const found = await mediaChecker(fullPath);
+      if (found) return true; // Stop early if found
+    } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.mp4') {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 // Check if thumbnail exists and is valid (e.g., >1KB)
 const thumbnailExistsAndValid = (filePath: string): boolean => {
@@ -88,3 +109,39 @@ export const getThumbnail = async (videoFullPath: string): Promise<string> => {
     throw error;
   }
 };
+
+// Retrieve Videos from current Directory
+export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
+  try {
+    const relativeFilePath = path.relative(videosDir, filepath).replace(/\\/g, '/');
+    const stats = await stat(filepath);
+    const duration = await getDuration(filepath);
+    const thumbnail = await getThumbnail(filepath)
+
+    return {
+      id: generateShortId(relativeFilePath + stats.mtimeMs),
+      name: path.basename(filepath, extension),
+      size: stats.size,
+      modifiedAt: stats.mtime,
+      type: "video/mp4",
+      duration,
+      url: `/videos/${relativeFilePath}`,
+      thumbnail
+    };
+  } catch (error) {
+    console.error(`Error processing video ${filepath}:`, error);
+    return null;  // Returning null for failed video processing
+  }
+};
+
+export const generateQrCode = (data: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    qrcode.generate(data, { small: true }, (qr) => {
+      if (!qr) {
+        reject('Error generating QR code');
+      } else {
+        resolve(qr);
+      }
+    });
+  });
+}
