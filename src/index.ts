@@ -1,6 +1,6 @@
 import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, mediaChecker } from './utils';
 import { DirectoryInterface, requestBodyInterface, responseType } from './types';
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, response, Response } from 'express';
 import { videosDir, cacheDir } from './constants';
 import { existsSync, mkdirSync, readdir } from 'fs';
 import fs from 'fs/promises';
@@ -51,7 +51,7 @@ app.post('/api/videos', async (request: Request, response: Response) => {
         const promises = chunk.map(async (item) => {
             const currentPath = path.join(navigationPath, item);
             const stats = await fs.stat(currentPath);
-            
+
             // Check if the item is a directory
             if (stats.isDirectory()) {
                 const name = path.basename(currentPath)
@@ -62,7 +62,7 @@ app.post('/api/videos', async (request: Request, response: Response) => {
                     url: `/${name}`,
                 } as DirectoryInterface);
             }
-            
+
             // Check if the item is a video file (.mp4)
             const extname = path.extname(item).toLowerCase();
             if (extname === '.mp4') {
@@ -84,6 +84,8 @@ app.post('/api/videos', async (request: Request, response: Response) => {
         response.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+app.get('/owner', (_, response: Response) => response.json({ message: "Backend service for 'Pocket Media Library,' originally created and maintained by Sanskar (a.k.a. 5agmi), since July 2025." }))
 
 // Static file serving
 app.use('/', express.static(__dirname));
