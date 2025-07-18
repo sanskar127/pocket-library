@@ -2,18 +2,21 @@ import fs from 'fs/promises';
 import path from 'path';
 import { videosDir } from "./constants";
 import { generateShortId, getDuration, getThumbnail } from "./utils";
-import type { DirectoryInterface, scanDirectoryInterface, ScanVideosInterface, VideoInterface } from './types';
+import type { DirectoryInterface, ResultDataType, scanDirectoryInterface, ScanVideosInterface } from './types';
+
+// Variable to store the index of the last fetched file
+let lastFetchedIndex = 0;
 
 // Retrieve Videos from current Directory
 export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
   try {
-    const relativeFilePath = path.relative(videosDir, filepath)
+    const relativeFilePath = path.relative(videosDir, filepath).replace(/\\/g, '/');
     const stats = await fs.stat(filepath);
     const duration = await getDuration(filepath);
     const thumbnail = await getThumbnail(filepath)
 
     return {
-      id: generateShortId(path.relative(videosDir, filepath) + stats.mtimeMs),
+      id: generateShortId(relativeFilePath + stats.mtimeMs),
       name: path.basename(filepath, extension),
       size: stats.size,
       modifiedAt: stats.mtime,
@@ -95,25 +98,44 @@ async function mediaChecker(dir: string): Promise<boolean> {
   return false;
 }
 
-export const scanDirectory: scanDirectoryInterface = async (dir) => {
-  const data: (VideoInterface | DirectoryInterface)[] = [];
+export const scanDirectory: scanDirectoryInterface = async (dir, limit) => {
+  const data: ResultDataType[] = [];
 
   try {
     const items = await fs.readdir(dir);
+    let chunk: string[] = [];
 
-    for (const item of items) {
+    // Calculate the chunk to slice
+    if (lastFetchedIndex >= items.length) {
+      const index = Math.max(0, items.length - (limit - (lastFetchedIndex - items.length)));
+      chunk = items.slice(index);
+    } else {
+      chunk = items.slice(lastFetchedIndex, lastFetchedIndex + limit);
+    }
+
+    // Iterate through chunk items
+    for (const item of chunk) {
       const currentPath = path.join(dir, item);
       const stats = await fs.stat(currentPath);
 
-      if (stats.isDirectory() && path.basename(currentPath) !== '.cache' && await mediaChecker(currentPath)) {
-        const relativeFilePath = path.relative(videosDir, currentPath)
-        data.push({
-          id: generateShortId(path.relative(videosDir, dir) + stats.mtimeMs),
-          name: path.basename(currentPath),
-          type: 'directory',
-          url: relativeFilePath,
-        } as DirectoryInterface);
-      } else if (item.toLowerCase().endsWith('.mp4')) {
+      // Check if the item is a directory and process accordingly
+      try {
+        if (stats.isDirectory() && path.basename(currentPath) !== '.cache' && await mediaChecker(currentPath)) {
+          const relativeFilePath = path.relative(videosDir, currentPath).replace(/\\/g, '/');
+          data.push({
+            id: generateShortId(path.relative(videosDir, dir) + stats.mtimeMs),
+            name: path.basename(currentPath),
+            type: 'directory',
+            url: relativeFilePath,
+          } as DirectoryInterface);
+        }
+      } catch (mediaError) {
+        console.error(`Error checking media at ${currentPath}:`, mediaError);
+      }
+
+      // Check if the item is a video and process
+      const extname = path.extname(item).toLowerCase();
+      if (extname === '.mp4') {
         try {
           const video = await scanVideos(currentPath, '.mp4');
           if (video) {
@@ -124,9 +146,12 @@ export const scanDirectory: scanDirectoryInterface = async (dir) => {
         }
       }
     }
+
+    // Update the last fetched index after processing the chunk
+    lastFetchedIndex += chunk.length;
+
   } catch (error) {
     console.error(`Error scanning directory ${dir}:`, error);
   }
-
   return data;
 };

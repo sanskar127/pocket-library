@@ -17,6 +17,8 @@ export interface DirectoryInterface {
   url: string;
 }
 
+export type ResultDataType = VideoInterface | DirectoryInterface
+
 export interface RecursiveDirectoryInterface {
   name: string;
   directories: RecursiveDirectoryInterface[];
@@ -28,5 +30,5 @@ export interface ScanVideosInterface {
 }
 
 export interface scanDirectoryInterface {
-  (dir: string): Promise<(VideoInterface | DirectoryInterface)[]>
+  (dir: string, limit: number): Promise<ResultDataType[]>
 }

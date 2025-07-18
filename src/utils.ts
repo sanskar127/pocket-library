@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import fs from 'fs'
+import os from 'os'
 import ffmpeg from 'fluent-ffmpeg';
 import path from 'path';
 import { cacheDir } from './constants';
@@ -38,6 +39,19 @@ const thumbnailExistsAndValid = (filePath: string): boolean => {
     return false;
   }
 };
+
+// Function to get the local IP address of the machine
+export const getLocalIPAddress = (): string => {
+  const networkInterfaces = os.networkInterfaces();
+  for (let interfaceName in networkInterfaces) {
+    for (let interfaceInfo of networkInterfaces[interfaceName]!) {
+      if (!interfaceInfo.internal && interfaceInfo.family === 'IPv4') {
+        return interfaceInfo.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
 
 // Generate thumbnail using ffmpeg
 const generateThumbnail = (videoPath: string, outputPath: string): Promise<void> => {
