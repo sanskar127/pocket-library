@@ -34,36 +34,41 @@ export const getDuration = (videoFullPath: string): Promise<number> => {
   });
 };
 
-// Check if the directory contains any media (video files)
-export const mediaChecker = async (dir: string): Promise<string | null> => {
+export const mediaChecker = async (dir: string): Promise<boolean> => {
   try {
-    // Use async stat for non-blocking
     const stats = await stat(dir);
-    if (!stats.isDirectory() || (dir !== '.cache') || (path.extname(dir) !== '.mp4')) return null;
 
-    const entries = await readdir(dir, { withFileTypes: true });
+    // Skip .cache directories
+    if (path.basename(dir) === '.cache') return false;
 
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
+    // If it's a file and not an mp4, return false
+    if (!stats.isDirectory() && path.extname(dir).toLowerCase() === '.mp4') return true;
 
-      if (entry.isDirectory()) {
-        // Avoid infinite loops in case of symlinks
-        if (entry.isSymbolicLink()) continue;
+    // If it's a directory, check its contents
+    if (stats.isDirectory()) {
+      const entries = await readdir(dir, { withFileTypes: true });
 
-        const found = await mediaChecker(fullPath);
-        if (found) return fullPath; // return the directory path where media was found
-      } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.mp4') {
-        return fullPath; // return the directory path where the media file is found
+      // Loop through the directory entries to find any mp4 file or subdirectory with mp4s
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+
+        if (entry.isDirectory()) {
+          const found = await mediaChecker(fullPath);
+          if (found) return true;  // Return true if a mp4 is found in any subdirectory
+        } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.mp4') {
+          return true;  // Return true if an mp4 file is found
+        }
       }
     }
 
-    return null; // No media found
-
+    // Return false if no mp4 file is found
+    return false;
   } catch (error) {
-    console.error(`Error reading directory ${dir}:`, error);
-    return null; // Handle any errors gracefully
+    console.error('Error checking media:', error);
+    return false;
   }
 };
+
 
 // Check if thumbnail exists and is valid (size >1KB)
 const thumbnailExistsAndValid = (filePath: string): boolean => {

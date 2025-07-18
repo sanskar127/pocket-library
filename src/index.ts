@@ -2,7 +2,7 @@ import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, mediaCh
 import { DirectoryInterface, requestBodyInterface, responseType } from './types';
 import express, { Express, Request, Response } from 'express';
 import { videosDir, cacheDir } from './constants';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdir } from 'fs';
 import fs from 'fs/promises';
 import cors from 'cors';
 import path from 'path';
@@ -27,38 +27,44 @@ app.post('/api/videos', async (request: Request, response: Response) => {
     const navigationPath = dir ? path.join(videosDir, dir) : videosDir;
 
     try {
-        const items = (await fs.readdir(navigationPath, {})).filter(item => mediaChecker(item));
+        // Use map with async mediaChecker and filter only valid items
+        const items = (await Promise.all(
+            (await fs.readdir(navigationPath)).map(async (item) => {
+                // Check if item has media
+                const isMedia = await mediaChecker(path.join(navigationPath, item));
+                return isMedia ? item : null; // Keep item if it's valid media
+            })
+        )).filter((item) => item !== null); // Filter out null values
 
-        const itemsLength = items.length
-        let chunk: string[] = []
+        const itemsLength = items.length;
+        let chunk: string[] = [];
 
-        if (offset < itemsLength)
+        if (offset < itemsLength) {
             chunk = items.slice(offset, offset + limit);
-
-        else if ((limit || offset) >= itemsLength)
-            chunk = items
-
-        else
+        } else if ((limit || offset) >= itemsLength) {
+            chunk = items;
+        } else {
             chunk = items.slice(offset - limit, itemsLength);
+        }
 
         // Process directories and videos concurrently
         const promises = chunk.map(async (item) => {
             const currentPath = path.join(navigationPath, item);
             const stats = await fs.stat(currentPath);
-            const extname = path.extname(item).toLowerCase();
-
+            
             // Check if the item is a directory
             if (stats.isDirectory()) {
-                const relativeFilePath = path.relative(videosDir, currentPath).replace(/\\/g, '/');
+                const name = path.basename(currentPath)
                 data.push({
                     id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
-                    name: path.basename(currentPath),
+                    name,
                     type: 'directory',
-                    url: relativeFilePath,
+                    url: `/${name}`,
                 } as DirectoryInterface);
             }
-
+            
             // Check if the item is a video file (.mp4)
+            const extname = path.extname(item).toLowerCase();
             if (extname === '.mp4') {
                 try {
                     const video = await scanVideos(currentPath, '.mp4');
