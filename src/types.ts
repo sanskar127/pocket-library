@@ -25,4 +25,5 @@ export type responseType = VideoInterface | DirectoryInterface
 export interface requestBodyInterface {
   dir?: string;
   limit: number;
+  offset: number;
 }

@@ -66,7 +66,16 @@ export const getLocalIPAddress = (): string => {
   const networkInterfaces = os.networkInterfaces();
   for (let interfaceName in networkInterfaces) {
     for (let interfaceInfo of networkInterfaces[interfaceName]!) {
-      if (!interfaceInfo.internal && interfaceInfo.family === 'IPv4') {
+      // Skip internal interfaces, IPv6 addresses, VPN, WSL, VirtualBox interfaces
+      if (
+        !interfaceInfo.internal && 
+        interfaceInfo.family === 'IPv4' && 
+        !interfaceName.toLowerCase().includes('vpn') &&
+        !interfaceName.toLowerCase().includes('vbox') &&
+        !interfaceName.toLowerCase().includes('wsl') &&
+        !interfaceInfo.address.startsWith('172.16.') && // Avoiding common private network IPs for VPNs
+        !interfaceInfo.address.startsWith('10.') // Avoiding common private IPs used by VPNs and WSL
+      ) {
         return interfaceInfo.address;
       }
     }

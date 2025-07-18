@@ -17,7 +17,7 @@ app.use(cors());
 const validateLimit = (limit: number): boolean => !isNaN(limit) && limit > 0;
 
 app.post('/api/videos', async (request: Request, response: Response) => {
-    const { dir, limit } = request.body as requestBodyInterface;
+    const { dir, limit, offset } = request.body as requestBodyInterface;
 
     if (!validateLimit(limit)) {
         return response.status(400).json({ error: 'Invalid limit' });
@@ -27,16 +27,28 @@ app.post('/api/videos', async (request: Request, response: Response) => {
     const navigationPath = dir ? path.join(videosDir, dir) : videosDir;
 
     try {
-        const items = await fs.readdir(navigationPath);
-        
+        const items = (await fs.readdir(navigationPath)).filter(item => item !== '.cache');
+
+        const itemsLength = items.length
+        let chunk: string[] = []
+
+        if (offset < itemsLength)
+            chunk = items.slice(offset, offset + limit);
+
+        else if ((limit || offset) >= itemsLength)
+            chunk = items
+
+        else
+            chunk = items.slice(offset - limit, itemsLength);
+
         // Process directories and videos concurrently
-        const promises = items.map(async (item) => {
+        const promises = chunk.map(async (item) => {
             const currentPath = path.join(navigationPath, item);
             const stats = await fs.stat(currentPath);
             const extname = path.extname(item).toLowerCase();
 
             // Check if the item is a directory
-            if (stats.isDirectory() && path.basename(currentPath) !== '.cache' && await mediaChecker(currentPath)) {
+            if (stats.isDirectory() && await mediaChecker(currentPath)) {
                 const relativeFilePath = path.relative(videosDir, currentPath).replace(/\\/g, '/');
                 data.push({
                     id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
@@ -80,7 +92,7 @@ app.listen(port, async () => {
 
     try {
         const qr = await generateQrCode(url);
-        console.log(`Pocket Media Library File server is Active!\n1. Either you can scan qr code from your mobile device \n${qr} \nOR \nYou can directly enter the host URL \n\nHost: ${url}`);
+        console.log(`Pocket Media Library File server is Active!\n1. Either you can scan qr code from your mobile device \n${qr} \n2. You can directly enter the host URL \n\nLocal: http://localhost:${port}\nHost: ${url}`);
     } catch (qrError) {
         console.error('Error generating QR code:', qrError);
         process.exit(1)
