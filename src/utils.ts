@@ -35,20 +35,34 @@ export const getDuration = (videoFullPath: string): Promise<number> => {
 };
 
 // Check if the directory contains any media (video files)
-export const mediaChecker = async (dir: string): Promise<boolean> => {
-  const entries = await readdir(dir, { withFileTypes: true });
+export const mediaChecker = async (dir: string): Promise<string | null> => {
+  try {
+    // Use async stat for non-blocking
+    const stats = await stat(dir);
+    if (!stats.isDirectory() || (dir !== '.cache') || (path.extname(dir) !== '.mp4')) return null;
 
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      const found = await mediaChecker(fullPath);
-      if (found) return true;
-    } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.mp4') {
-      return true;
+    const entries = await readdir(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        // Avoid infinite loops in case of symlinks
+        if (entry.isSymbolicLink()) continue;
+
+        const found = await mediaChecker(fullPath);
+        if (found) return fullPath; // return the directory path where media was found
+      } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.mp4') {
+        return fullPath; // return the directory path where the media file is found
+      }
     }
-  }
 
-  return false;
+    return null; // No media found
+
+  } catch (error) {
+    console.error(`Error reading directory ${dir}:`, error);
+    return null; // Handle any errors gracefully
+  }
 };
 
 // Check if thumbnail exists and is valid (size >1KB)
@@ -68,8 +82,8 @@ export const getLocalIPAddress = (): string => {
     for (let interfaceInfo of networkInterfaces[interfaceName]!) {
       // Skip internal interfaces, IPv6 addresses, VPN, WSL, VirtualBox interfaces
       if (
-        !interfaceInfo.internal && 
-        interfaceInfo.family === 'IPv4' && 
+        !interfaceInfo.internal &&
+        interfaceInfo.family === 'IPv4' &&
         !interfaceName.toLowerCase().includes('vpn') &&
         !interfaceName.toLowerCase().includes('vbox') &&
         !interfaceName.toLowerCase().includes('wsl') &&

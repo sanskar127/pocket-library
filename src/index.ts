@@ -27,7 +27,7 @@ app.post('/api/videos', async (request: Request, response: Response) => {
     const navigationPath = dir ? path.join(videosDir, dir) : videosDir;
 
     try {
-        const items = (await fs.readdir(navigationPath)).filter(item => item !== '.cache');
+        const items = (await fs.readdir(navigationPath, {})).filter(item => mediaChecker(item));
 
         const itemsLength = items.length
         let chunk: string[] = []
@@ -48,7 +48,7 @@ app.post('/api/videos', async (request: Request, response: Response) => {
             const extname = path.extname(item).toLowerCase();
 
             // Check if the item is a directory
-            if (stats.isDirectory() && await mediaChecker(currentPath)) {
+            if (stats.isDirectory()) {
                 const relativeFilePath = path.relative(videosDir, currentPath).replace(/\\/g, '/');
                 data.push({
                     id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
