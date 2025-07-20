@@ -99,11 +99,20 @@ app.listen(port, async () => {
     // Create cache dir if missing
     if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
 
-    const url: string = `http://${getLocalIPAddress()}:${port}`;
+    const address = getLocalIPAddress();
+    const url: string = `http://${address}:${port}`;
 
     try {
         const qr = await generateQrCode(url);
-        console.log(`Pocket Media Library File server is Active!\n1. Either you can scan qr code from your mobile device \n${qr} \n2. You can directly enter the host URL \n\nLocal: http://localhost:${port}\nHost: ${url}`);
+        console.log(
+            "Pocket Media Library File server is Active!\n" +
+            "1. Either you can scan qr code from your mobile device \n" +
+            qr +
+            "\n2. You can directly enter the host URL \n" +
+            `\nLocal: http://localhost:${port}\n`
+        );
+
+        if (address) console.log(`Host: ${url}`)
     } catch (qrError) {
         console.error('Error generating QR code:', qrError);
         process.exit(1)

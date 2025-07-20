@@ -81,25 +81,18 @@ const thumbnailExistsAndValid = (filePath: string): boolean => {
 };
 
 // Retrieve local machine's IP address
-export const getLocalIPAddress = (): string => {
-  const networkInterfaces = os.networkInterfaces();
-  for (let interfaceName in networkInterfaces) {
-    for (let interfaceInfo of networkInterfaces[interfaceName]!) {
-      // Skip internal interfaces, IPv6 addresses, VPN, WSL, VirtualBox interfaces
-      if (
-        !interfaceInfo.internal &&
-        interfaceInfo.family === 'IPv4' &&
-        !interfaceName.toLowerCase().includes('vpn') &&
-        !interfaceName.toLowerCase().includes('vbox') &&
-        !interfaceName.toLowerCase().includes('wsl') 
-        // !interfaceInfo.address.startsWith('172.16.') && // Avoiding common private network IPs for VPNs
-        // !interfaceInfo.address.startsWith('10.') // Avoiding common private IPs used by VPNs and WSL
-      ) {
-        return interfaceInfo.address;
+export const getLocalIPAddress = (): string | null => {
+  const inc = /eth|en|wlan|wl|wifi|usb|rndis|rmnet|ecm|wi-fi|ethernet|local area/i;
+  const exc = /loopback|vmnet|vbox|virtual|hyper|vpn|br-|docker|nat|host|tap|tun|veth|bridge/i;
+
+  for (const name in os.networkInterfaces()) {
+    if (inc.test(name) && !exc.test(name)) {
+      for (const { address, family, internal } of os.networkInterfaces()[name] || []) {
+        if (family === 'IPv4' && !internal) return address;
       }
     }
   }
-  return '127.0.0.1';
+  return null;
 };
 
 // Generate thumbnail using ffmpeg
