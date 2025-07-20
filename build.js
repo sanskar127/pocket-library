@@ -8,7 +8,7 @@ esbuild.build({
   bundle: true,
   platform: 'node',
   target: 'node20',
-  outfile: 'dist/server.bundle.js',
+  outfile: 'dist/server.js',
   external: [], // Add modules here if you want to exclude them
 }).then(() => {
   const outputPath = path.join(__dirname, 'dist', 'package.json');
@@ -17,7 +17,7 @@ esbuild.build({
     version: "1.0.0",
     main: "server.js",
     bin: {
-      pocket: "node server.bundle.js"
+      pocket: "server.js"
     },
     dependencies: {}
   };

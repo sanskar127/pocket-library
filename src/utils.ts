@@ -91,9 +91,9 @@ export const getLocalIPAddress = (): string => {
         interfaceInfo.family === 'IPv4' &&
         !interfaceName.toLowerCase().includes('vpn') &&
         !interfaceName.toLowerCase().includes('vbox') &&
-        !interfaceName.toLowerCase().includes('wsl') &&
-        !interfaceInfo.address.startsWith('172.16.') && // Avoiding common private network IPs for VPNs
-        !interfaceInfo.address.startsWith('10.') // Avoiding common private IPs used by VPNs and WSL
+        !interfaceName.toLowerCase().includes('wsl') 
+        // !interfaceInfo.address.startsWith('172.16.') && // Avoiding common private network IPs for VPNs
+        // !interfaceInfo.address.startsWith('10.') // Avoiding common private IPs used by VPNs and WSL
       ) {
         return interfaceInfo.address;
       }

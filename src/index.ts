@@ -10,6 +10,7 @@ import path from 'path';
 const app: Express = express();
 const port: number = 3000;
 
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
@@ -19,12 +20,14 @@ const validateLimit = (limit: number): boolean => !isNaN(limit) && limit > 0;
 app.post('/api/videos', async (request: Request, response: Response) => {
     const { dir, limit, offset } = request.body as requestBodyInterface;
 
+    const decodedDir = decodeURIComponent(dir as string)
+
     if (!validateLimit(limit)) {
         return response.status(400).json({ error: 'Invalid limit' });
     }
 
     const data: responseType[] = [];
-    const navigationPath = dir ? path.join(videosDir, dir) : videosDir;
+    const navigationPath = decodedDir ? path.join(videosDir, decodedDir) : videosDir;
 
     try {
         // Use map with async mediaChecker and filter only valid items
