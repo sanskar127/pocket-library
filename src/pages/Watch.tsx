@@ -1,19 +1,34 @@
-import { useParams } from "react-router"
-import VideoPlayer from "../components/ui/VideoPlayer"
-import { isMobile, isTablet, MobileView } from "react-device-detect"
-import type { ItemType, VideoInterface } from "../types/types";
-import { useQueryClient } from '@tanstack/react-query';
+import { useParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { isMobile, isTablet, MobileView } from "react-device-detect";
+
+import VideoPlayer from "../components/ui/VideoPlayer";
 import MobilePlayer from "../components/ui/MobilePlayer";
 import Video from "../components/common/Video";
+
 import { formatRelativeTime, formatSize } from "../utils";
+import type { ItemType, VideoInterface } from "../types/types";
+import VideoNotFound from "../components/common/VideoNotFound";
+import { IoMdCloudDownload } from "react-icons/io";
 
 const Watch = () => {
-  const { videoId } = useParams<{ videoId: string }>()
+  const { videoId } = useParams<{ videoId: string }>();
+  const queryClient = useQueryClient();
 
-  const queryClient = useQueryClient()
-  const data = queryClient.getQueriesData({ queryKey: ['media'] })
-  const entries = data.flatMap(([_, value]) => value) as ItemType[]
+  // Flatten cached query data and find the relevant video entry
+  const data = queryClient.getQueriesData({ queryKey: ["media"] });
+  const entries = data.flatMap(([_, value]) => value) as ItemType[];
   const entry = (entries as VideoInterface[]).find(item => item.id === videoId);
+
+  const filteredVideos = entries.filter(
+    (item) => item.id !== videoId && item.type !== "directory"
+  ) as VideoInterface[];
+
+  if (!entry) {
+    return (
+      <VideoNotFound />
+    );
+  }
 
   return (
     <>
@@ -22,28 +37,51 @@ const Watch = () => {
           {/* Video Display */}
           <MobilePlayer content={entry} />
 
-          {/* Details */}
-          <div className="px-4 py-2">
-            <h3 className="text-xl font-bold sm:text-lg">{entry?.name}</h3>
-            <h4 className="text-sm text-gray-600 sm:text-base">{entry?.type}</h4>
-            <h4 className="text-sm text-gray-600 sm:text-base">{formatRelativeTime(entry?.modifiedAt)}</h4>
-            <h4 className="text-sm text-gray-600 sm:text-base">{formatSize(entry?.size)}</h4>
+          {/* Video Info & Download */}
+          <div className="px-4 py-3 space-y-2">
+            <div>
+              <h3 className="text-xl font-semibold">{entry.name}</h3>
+              <p className="text-xs text-gray-500">
+                Created {formatRelativeTime(entry.modifiedAt)}
+              </p>
+            </div>
+            <a
+              href={entry.url}
+              download
+              className="w-fit inline-flex items-center gap-2 text-xs px-2 py-1.5 bg-primary text-foreground rounded shadow hover:opacity-90 transition"
+            >
+              <IoMdCloudDownload className="w-4 h-4" />
+              <span>Download</span>
+              {/* <span className="text-gray-400">({formatSize(entry.size)})</span> */}
+            </a>
           </div>
 
-
-          <div className="grid gap-6 container px-4 py-2 custom-grid">
-            {entries?.map((item: ItemType) => {
-              if ((item.id !== videoId) && (item.type !== 'directory')) {
-                return <Video key={item.id} details={item as VideoInterface} />
-              }
-            })}
+          {/* Related Videos */}
+          <div className="grid gap-4 px-4 pb-6">
+            {filteredVideos.map((item) => (
+              <Video key={item.id} details={item} />
+            ))}
           </div>
         </MobileView>
-      ) :
-        <VideoPlayer content={entry} />
-      }
-    </>
-  )
-}
+      ) : (
+        <div className="relative">
+          <VideoPlayer content={entry} />
 
-export default Watch
+          {/* Download Button for Desktop */}
+          {/* <div className="absolute top-4 right-4 z-10">
+            <a
+              href={entry.url}
+              download
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition"
+            >
+              <FiDownloadCloud className="w-5 h-5" />
+              Download ({formatSize(entry.size)})
+            </a>
+          </div> */}
+        </div>
+      )}
+    </>
+  );
+};
+
+export default Watch;

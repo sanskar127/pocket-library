@@ -1,19 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type FC } from 'react';
-import { useVideoPlayer } from '../../hooks/useVideoPlayer';
-import type { VideoInterface } from "../../types/types";
 import { useNavigate } from 'react-router';
-
-// Icons
 import { IoIosPlay, IoIosPause } from "react-icons/io";
 import { FaExpand, FaCompress, FaAngleDown } from 'react-icons/fa';
 
-// External Components
+import { useVideoPlayer } from '../../hooks/useVideoPlayer';
+import type { VideoInterface } from "../../types/types";
 import { PlaybackSpeedControl, ProgressBar, TimeDisplay } from './Player';
 import VideoNotFound from '../common/VideoNotFound';
 
 const MobilePlayer: FC<{ content: VideoInterface | undefined }> = ({ content }) => {
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const [showControls, setShowControls] = useState(true);
@@ -39,34 +35,27 @@ const MobilePlayer: FC<{ content: VideoInterface | undefined }> = ({ content }) 
   }, []);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    container.focus();
-
-    const handleActivity = () => resetHideTimeout();
-    container.addEventListener('mousemove', handleActivity);
-    container.addEventListener('click', handleActivity);
-    container.addEventListener('keydown', handleActivity);
     resetHideTimeout();
-
     return () => {
-      container.removeEventListener('mousemove', handleActivity);
-      container.removeEventListener('click', handleActivity);
-      container.removeEventListener('keydown', handleActivity);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
   }, [resetHideTimeout]);
 
-  if (!content) return <VideoNotFound />
+  if (!content) return <VideoNotFound />;
 
   return (
     <div
-      ref={containerRef}
       tabIndex={0}
-      //   onClick={() => setShowControls(!showControls)}
+      onTouchStart={() => {
+        setShowControls(prev => {
+          const next = !prev;
+          if (next) resetHideTimeout();
+          else if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+          return next;
+        });
+      }}
       className='relative w-full max-h-1/2 bg-black outline-none'
     >
-      {/* Video Element */}
       <video
         ref={videoRef}
         src={content.url}
@@ -84,25 +73,13 @@ const MobilePlayer: FC<{ content: VideoInterface | undefined }> = ({ content }) 
           <button onClick={() => navigate(-1)} className="text-3xl hover:text-primary">
             <FaAngleDown />
           </button>
-          {/* <h2 className="text-lg md:text-2xl font-semibold">{content.name}</h2> */}
         </div>
-          <PlaybackSpeedControl playbackRate={playbackRate} onChange={setPlaybackRate} />
+        <PlaybackSpeedControl playbackRate={playbackRate} onChange={setPlaybackRate} />
       </div>
 
       {/* Center Actions */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-        {/* Wrapper with pointer events to allow button interaction */}
         <div className={`flex items-center gap-10 ${showControls ? 'block' : 'hidden'} transition-opacity duration-300 pointer-events-auto`}>
-          {/* Skip Back */}
-          {/* <button
-            onClick={() => setCurrentTime(Math.max(0, currentTime - 10))}
-            className="text-4xl text-white hover:text-primary"
-            aria-label="Skip back 10 seconds"
-          >
-            <IoIosSkipBackward />
-          </button> */}
-
-          {/* Play/Pause */}
           <button
             onClick={togglePlay}
             className="text-white text-6xl md:text-7xl hover:text-primary"
@@ -110,18 +87,8 @@ const MobilePlayer: FC<{ content: VideoInterface | undefined }> = ({ content }) 
           >
             {isPlaying ? <IoIosPause /> : <IoIosPlay />}
           </button>
-
-          {/* Skip Forward */}
-          {/* <button
-            onClick={() => setCurrentTime(Math.min(duration, currentTime + 10))}
-            className="text-4xl text-white hover:text-primary"
-            aria-label="Skip forward 10 seconds"
-          >
-            <IoIosSkipForward />
-          </button> */}
         </div>
 
-        {/* Buffering Spinner */}
         {isBuffering && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -132,14 +99,10 @@ const MobilePlayer: FC<{ content: VideoInterface | undefined }> = ({ content }) 
       {/* Bottom Controls */}
       <div className={`absolute bottom-0 left-0 right-0 px-6 pb-3 pt-4 bg-gradient-to-t from-black/90 to-transparent z-10 transition-opacity duration-300 ${showControls ? 'block' : 'hidden'}`}>
         <div className="mt-3 flex justify-between items-center text-white text-sm">
-          {/* Left Controls */}
           <div className="flex items-center gap-5">
             <TimeDisplay currentTime={currentTime} duration={duration} />
           </div>
-
-          {/* Right Controls */}
           <div className="flex items-center gap-5">
-
             <button onClick={toggleFullscreen} className="text-xl hover:text-primary transition">
               {isFullscreen ? <FaCompress /> : <FaExpand />}
             </button>

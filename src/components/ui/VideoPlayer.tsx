@@ -83,6 +83,7 @@ const VideoPlayer: FC<{ content: VideoInterface | undefined }> = ({ content }) =
       <video
         ref={videoRef}
         src={content.url}
+        poster={content?.thumbnail}
         autoPlay
         className="w-full h-full object-contain"
         controls={false}
