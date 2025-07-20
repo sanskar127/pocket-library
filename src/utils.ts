@@ -1,5 +1,6 @@
 
-export const formatRelativeTime = (dateString: Date): string => {
+export const formatRelativeTime = (dateString: Date | undefined): string => {
+  if (!dateString) return ""
   const date = new Date(dateString);
   const now = new Date();
 
@@ -21,7 +22,8 @@ export const formatRelativeTime = (dateString: Date): string => {
   return `${years} year${years !== 1 ? 's' : ''} ago`;
 };
 
-export const formatSize = (bytes: number, decimals = 2): string => {
+export const formatSize = (bytes: number | undefined, decimals = 2): string => {
+  if (!bytes) return ""
   if (bytes === 0) return '0 Bytes';
 
   const k = 1024;

@@ -1,28 +1,31 @@
-import { useLocation } from "react-router-dom";
 import Directory from "../components/common/Directory";
 import Video from "../components/common/Video";
-import { useItems } from "../context/itemsContext";
-import { useEffect } from "react";
-import type { DirectoryInterface, VideoInterface } from "../types/types";
+import type { DirectoryInterface, VideoInterface, ItemType } from "../types/types";
 import Navbar from "../components/common/Navbar";
+import useFetchMedia from "../hooks/useFetchMedia";
+import ServerOffline from "../components/common/ServerOffline";
 
 const Home = () => {
-  const { items, setItems } = useItems()
-  const location = useLocation()
+  const { data, isPending, isError } = useFetchMedia();
 
+  if (isPending) {
+    return (
+      <div className="w-full min-h-screen bg-dark text-foregroundY">
+        <Navbar />
+        <div className="text-center text-lg text-white">Loading...</div>
+      </div>
+    )
+  }
 
-  useEffect(() => {
-    fetch(`/api/videos/${location.pathname}`)
-      .then(res => res.json())
-      .then(setItems)
-      .catch(err => console.error('Error fetching videos:', err));
-  }, [location.pathname, setItems]);
+  if (isError) {
+    return <ServerOffline />
+  }
 
   return (
-    <div className="w-full min-h-screen bg-dark text-foregroundY">
+    <div className="w-full min-h-screen bg-dark text-foreground">
       <Navbar />
-      <div className="grid gap-6 container mx-auto px-4 py-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {items.map(item => {
+      <div className="grid gap-6 container px-4 py-2 custom-grid">
+        {data?.map((item: ItemType) => {
           if (item.type === 'directory')
             return <Directory key={item.id} details={item as DirectoryInterface} />
           else

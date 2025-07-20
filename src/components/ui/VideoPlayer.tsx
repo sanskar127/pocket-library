@@ -1,28 +1,20 @@
-import {
-  useCallback, useEffect, useRef, useState, type FC, type KeyboardEvent
-} from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useVideoPlayer } from '../../../hooks/useVideoPlayer';
-import { useItems } from "../../../context/itemsContext";
-import type { VideoInterface } from "../../../types/types";
+import { useCallback, useEffect, useRef, useState, type FC, type KeyboardEvent } from 'react';
+import { useVideoPlayer } from '../../hooks/useVideoPlayer';
+import type { VideoInterface } from "../../types/types";
+import { useNavigate } from 'react-router';
 
 // Icons
-import { IoMdArrowBack } from 'react-icons/io';
-import { FaExpand, FaCompress, FaRegSadTear } from 'react-icons/fa';
 import { IoIosPlay, IoIosPause, IoIosSkipBackward, IoIosSkipForward } from "react-icons/io";
+import { FaExpand, FaCompress, FaAngleLeft } from 'react-icons/fa';
 
 // External Components
-import ProgressBar from './ProgressBar';
-import VolumeControl from './VolumeControl';
-import TimeDisplay from './TimeDisplay';
-import PlaybackSpeedControl from './PlaybackSpeedControl';
+import { PlaybackSpeedControl, VolumeControl, ProgressBar, TimeDisplay } from './Player';
+import VideoNotFound from '../common/VideoNotFound';
 
-const VideoPlayer: FC<{ id: string | unknown }> = ({ id }) => {
-  const { items } = useItems();
-  const entry = (items as VideoInterface[]).find(item => item.id === id);
-  const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement>(null);
+const VideoPlayer: FC<{ content: VideoInterface | undefined }> = ({ content }) => {
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
@@ -78,33 +70,19 @@ const VideoPlayer: FC<{ id: string | unknown }> = ({ id }) => {
     }
   };
 
-  if (!entry) return (
-    <div className="flex items-center justify-center min-h-screen bg-dark text-white px-4">
-      <div className="text-center">
-        <FaRegSadTear className="text-6xl text-primary mx-auto mb-6" />
-        <h1 className="text-3xl font-bold mb-2">Video Not Found</h1>
-        <p className="text-lg text-gray-400 mb-6">The video you're looking for doesn't exist or has been removed.</p>
-        <button
-          onClick={() => navigate(-1)}
-          className="bg-primary/90 hover:bg-primary text-white px-6 py-2 rounded transition"
-        >
-          Go Back Home
-        </button>
-      </div>
-    </div>
-  );
+  if (!content) return <VideoNotFound />
 
   return (
     <div
       ref={containerRef}
       tabIndex={0}
       onKeyDown={handleKeyboardShortcuts}
-      className={`relative w-full h-full bg-black outline-none ${showControls ? 'cursor-auto' : 'cursor-none'}`}
+      className={`relative w-full h-screen bg-black outline-none ${showControls ? 'cursor-auto' : 'cursor-none'}`}
     >
       {/* Video Element */}
       <video
         ref={videoRef}
-        src={entry.url}
+        src={content.url}
         autoPlay
         className="w-full h-full object-contain"
         controls={false}
@@ -118,10 +96,10 @@ const VideoPlayer: FC<{ id: string | unknown }> = ({ id }) => {
       {/* Top Controls */}
       <div className={`absolute top-0 left-0 w-full flex justify-between items-center px-5 py-3 bg-gradient-to-b from-black/90 to-transparent transition-opacity duration-300 z-10 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
         <div className="flex items-center gap-4 text-white">
-          <button onClick={() => navigate(-1)} className="text-2xl hover:text-primary">
-            <IoMdArrowBack />
+          <button onClick={() => navigate(-1)} className="text-3xl hover:text-primary">
+            <FaAngleLeft />
           </button>
-          <h2 className="text-lg md:text-2xl font-semibold">{entry.name}</h2>
+          <h2 className="text-lg md:text-2xl font-semibold">{content.name}</h2>
         </div>
         <div className="hidden md:block">
         </div>
