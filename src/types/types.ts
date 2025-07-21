@@ -1,3 +1,5 @@
+import type { QueryFunctionContext } from "@tanstack/react-query"
+
 export interface VideoInterface {
   id: string;
   name: string;
@@ -16,4 +18,15 @@ export interface DirectoryInterface {
   url: string;
 }
 
-export type ItemType = VideoInterface | DirectoryInterface
+type ItemType = VideoInterface | DirectoryInterface
+
+export interface ResponseInterface {
+  data: ItemType[]
+  isMore: boolean
+}
+
+export type QueryKeyType = ['media', string, number]
+
+export interface fetchInterface {
+  (context: QueryFunctionContext<QueryKeyType>): Promise<ResponseInterface>
+}

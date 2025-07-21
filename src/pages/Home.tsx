@@ -6,7 +6,7 @@ import useFetchMedia from "../hooks/useFetchMedia";
 import ServerOffline from "../components/common/ServerOffline";
 
 const Home = () => {
-  const { data, isPending, isError } = useFetchMedia();
+  const { data: response, isPending, isError } = useFetchMedia();
 
   if (isPending) {
     return (
@@ -25,7 +25,7 @@ const Home = () => {
     <div className="w-full min-h-screen bg-dark text-foreground">
       <Navbar />
       <div className="grid gap-6 container px-4 py-2 custom-grid">
-        {data?.map((item: ItemType) => {
+        {response?.data?.map((item: ItemType) => {
           if (item.type === 'directory')
             return <Directory key={item.id} details={item as DirectoryInterface} />
           else

@@ -6,18 +6,23 @@ import VideoPlayer from "../components/ui/VideoPlayer";
 import MobilePlayer from "../components/ui/MobilePlayer";
 import Video from "../components/common/Video";
 
-import { formatRelativeTime, formatSize } from "../utils";
+import { formatRelativeTime } from "../utils";
 import type { ItemType, VideoInterface } from "../types/types";
 import VideoNotFound from "../components/common/VideoNotFound";
 import { IoMdCloudDownload } from "react-icons/io";
+
+interface dataInterface {
+  data: ItemType[]
+  isMore: boolean
+}
 
 const Watch = () => {
   const { videoId } = useParams<{ videoId: string }>();
   const queryClient = useQueryClient();
 
   // Flatten cached query data and find the relevant video entry
-  const data = queryClient.getQueriesData({ queryKey: ["media"] });
-  const entries = data.flatMap(([_, value]) => value) as ItemType[];
+  const cache = queryClient.getQueriesData<dataInterface>({ queryKey: ["media"] });
+  const entries: ItemType[] = cache.flatMap(([_, response]) => response?.data)
   const entry = (entries as VideoInterface[]).find(item => item.id === videoId);
 
   const filteredVideos = entries.filter(
