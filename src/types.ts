@@ -22,8 +22,29 @@ export interface ScanVideosInterface {
 
 export type responseType = VideoInterface | DirectoryInterface
 
+type DeviceType = "mobile" | "tablet" | "laptop" | "desktop"
+
 export interface requestBodyInterface {
-  dir?: string;
+  pathname: string;
+  device: DeviceType;
   limit: number;
   offset: number;
+}
+
+
+export interface ChunkInterface {
+  (
+    entries: string[],
+    initialLength: number,
+    limit: number,
+    offset: number
+  ): {
+    chunk: string[]
+    hasMore: boolean
+  }
+}
+
+
+export interface GetInitialLength {
+  (device: DeviceType): number
 }

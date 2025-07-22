@@ -1,5 +1,5 @@
 import { cacheDir, videosDir } from './constants';
-import { ScanVideosInterface } from './types';
+import { ChunkInterface, GetInitialLength, ScanVideosInterface } from './types';
 import { readdir, stat } from 'fs/promises';
 import qrcode from 'qrcode-terminal';
 import ffmpeg from 'fluent-ffmpeg';
@@ -68,7 +68,6 @@ export const mediaChecker = async (dir: string): Promise<boolean> => {
     return false;
   }
 };
-
 
 // Check if thumbnail exists and is valid (size >1KB)
 const thumbnailExistsAndValid = (filePath: string): boolean => {
@@ -156,89 +155,25 @@ export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
   }
 };
 
-interface ChunkInterface {
-  (
-    entries: string[],
-    limit: number,
-    offset: number
-  ): {
-    chunk: string[]
-    hasMore: boolean
-  }
+export const getLimit: GetInitialLength = (device) => {
+  if (device === 'mobile') return 3
+  if (device === 'tablet') return 10
+  if (device === 'laptop') return 20
+  if (device === 'desktop') return 30
+
+  return -1
 }
 
-export const getChunk: ChunkInterface = (entries, limit, offset) => {
-  const { length } = entries
-
-  /* conditions for more content flag:
-
-  eg:
-  length = 10
-  limit = 4
-  offset = 12
-
-  when hasMore will be false:
-  - offset >= length
-  - length <= limit
-  - offset + limit >= length
-  - 
-
-  eg:
-  length = 2
-  limit = 4
-  offset = 0
-
-  when hasMore will be true:
-  - offset < length
-  - limit < length
-
-  eg:
-  length = 5
-  limit = 4
-  offset = 3
-
-  verify:
-  limit < 5: true
-  offset < length: true
-  then, has more must: true
-
-  eg:
-  length = 10
-  limit = 4
-  offset = 0
-
-  */
-
-  if (offset < length) {
-    if ((offset + limit) >= length) {
-      return {
-        chunk: [],
-        hasMore: false
-      }
-    } else {
-      return {
-        chunk: [],
-        hasMore: true
-      }
-    }
-  }
-
-  if (offset >= length) return {
-    chunk: [],
-    hasMore: false
-  }
-
-  if (limit >= length) return {
+export const getChunk: ChunkInterface = (entries, initialLength, limit, offset) => {
+  if (entries.length <= initialLength) return {
     chunk: entries,
     hasMore: false
   }
 
-  if (offset < length && limit < length) return {
-    chunk: entries.slice(offset, offset + limit),
-    hasMore: (offset + limit) < length ? true : false
+  return {
+    chunk: (offset === 0) ? entries.slice(offset, initialLength) : entries.slice(offset, offset + limit),
+    hasMore: (offset + limit) < entries.length ? true : false
   }
-
-  return { chunk: [], hasMore: false }
 }
 
 // Generate QR code
