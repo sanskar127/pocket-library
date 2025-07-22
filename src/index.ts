@@ -1,4 +1,4 @@
-import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, mediaChecker } from './utils';
+import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, mediaChecker, getChunk } from './utils';
 import { DirectoryInterface, requestBodyInterface, responseType } from './types';
 import express, { Express, Request, response, Response } from 'express';
 import { videosDir, cacheDir } from './constants';
@@ -18,20 +18,21 @@ app.use(cors());
 const validateLimit = (limit: number): boolean => !isNaN(limit) && limit > 0;
 
 app.post('/api/videos', async (request: Request, response: Response) => {
-    const { dir, limit, offset } = request.body as requestBodyInterface;
-
-    const decodedDir = decodeURIComponent(dir as string)
+    const { dir, limit, offset = 0 } = request.body as requestBodyInterface;
+    const decodedDir = decodeURIComponent(dir as string);
 
     if (!validateLimit(limit)) {
         return response.status(400).json({ error: 'Invalid limit' });
     }
 
-    const data: responseType[] = [];
+    const media: responseType[] = [];
     const navigationPath = decodedDir ? path.join(videosDir, decodedDir) : videosDir;
+
+    if (!navigationPath) return response.status(404).json({ error: "Directory not found" })
 
     try {
         // Use map with async mediaChecker and filter only valid items
-        const items = (await Promise.all(
+        const entries = (await Promise.all(
             (await fs.readdir(navigationPath)).map(async (item) => {
                 // Check if item has media
                 const isMedia = await mediaChecker(path.join(navigationPath, item));
@@ -39,49 +40,49 @@ app.post('/api/videos', async (request: Request, response: Response) => {
             })
         )).filter((item) => item !== null); // Filter out null values
 
-        const itemsLength = items.length;
-        let chunk: string[] = [];
+        // if ((limit + offset) < itemsLength || (offset < itemsLength)) {
+        //     if (!(limit >= itemsLength)) isMore = true
+        //     // isMore = true
+        //     chunk = items.slice(offset, offset + limit);
+        // }
 
-        if (offset < itemsLength) {
-            chunk = items.slice(offset, offset + limit);
-        } else if ((limit || offset) >= itemsLength) {
-            chunk = items;
-        } else {
-            chunk = items.slice(offset - limit, itemsLength);
-        }
+        // else if ((limit >= itemsLength) || (offset >= itemsLength)) chunk = items;
+        // else chunk = items.slice(offset - limit, itemsLength);
+
+        const { chunk, hasMore } = getChunk(entries, limit, offset)
 
         // Process directories and videos concurrently
-        const promises = chunk.map(async (item) => {
-            const currentPath = path.join(navigationPath, item);
-            const stats = await fs.stat(currentPath);
+        // const promises = chunk.map(async (item) => {
+        //     const currentPath = path.join(navigationPath, item);
+        //     const stats = await fs.stat(currentPath);
 
-            // Check if the item is a directory
-            if (stats.isDirectory()) {
-                const name = path.basename(currentPath)
-                data.push({
-                    id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
-                    name,
-                    type: 'directory',
-                    url: `/${name}`,
-                } as DirectoryInterface);
-            }
+        //     // Check if the item is a directory
+        //     if (stats.isDirectory()) {
+        //         const name = path.basename(currentPath)
+        //         media.push({
+        //             id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
+        //             name,
+        //             type: 'directory',
+        //             url: `/${name}`,
+        //         } as DirectoryInterface);
+        //     }
 
-            // Check if the item is a video file (.mp4)
-            const extname = path.extname(item).toLowerCase();
-            if (extname === '.mp4') {
-                try {
-                    const video = await scanVideos(currentPath, '.mp4');
-                    if (video) {
-                        data.push(video);
-                    }
-                } catch (videoError) {
-                    console.error(`Error scanning video at ${currentPath}:`, videoError);
-                }
-            }
-        });
+        //     // Check if the item is a video file (.mp4)
+        //     const extname = path.extname(item).toLowerCase();
+        //     if (extname === '.mp4') {
+        //         try {
+        //             const video = await scanVideos(currentPath, '.mp4');
+        //             if (video) {
+        //                 media.push(video);
+        //             }
+        //         } catch (videoError) {
+        //             console.error(`Error scanning video at ${currentPath}:`, videoError);
+        //         }
+        //     }
+        // });
 
-        await Promise.all(promises);  // Wait for all items to be processed concurrently
-        response.status(200).json(data);
+        // await Promise.all(promises);  // Wait for all items to be processed concurrently
+        response.status(200).json({ chunk, hasMore, count: entries.length });
     } catch (error) {
         console.error(`Error scanning directory ${navigationPath}:`, error);
         response.status(500).json({ error: 'Internal Server Error' });

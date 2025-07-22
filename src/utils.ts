@@ -156,6 +156,91 @@ export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
   }
 };
 
+interface ChunkInterface {
+  (
+    entries: string[],
+    limit: number,
+    offset: number
+  ): {
+    chunk: string[]
+    hasMore: boolean
+  }
+}
+
+export const getChunk: ChunkInterface = (entries, limit, offset) => {
+  const { length } = entries
+
+  /* conditions for more content flag:
+
+  eg:
+  length = 10
+  limit = 4
+  offset = 12
+
+  when hasMore will be false:
+  - offset >= length
+  - length <= limit
+  - offset + limit >= length
+  - 
+
+  eg:
+  length = 2
+  limit = 4
+  offset = 0
+
+  when hasMore will be true:
+  - offset < length
+  - limit < length
+
+  eg:
+  length = 5
+  limit = 4
+  offset = 3
+
+  verify:
+  limit < 5: true
+  offset < length: true
+  then, has more must: true
+
+  eg:
+  length = 10
+  limit = 4
+  offset = 0
+
+  */
+
+  if (offset < length) {
+    if ((offset + limit) >= length) {
+      return {
+        chunk: [],
+        hasMore: false
+      }
+    } else {
+      return {
+        chunk: [],
+        hasMore: true
+      }
+    }
+  }
+
+  if (offset >= length) return {
+    chunk: [],
+    hasMore: false
+  }
+
+  if (limit >= length) return {
+    chunk: entries,
+    hasMore: false
+  }
+
+  if (offset < length && limit < length) return {
+    chunk: entries.slice(offset, offset + limit),
+    hasMore: (offset + limit) < length ? true : false
+  }
+
+  return { chunk: [], hasMore: false }
+}
+
 // Generate QR code
 export const generateQrCode = (data: string): Promise<string> => {
   return new Promise((resolve, reject) => {
