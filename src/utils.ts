@@ -1,3 +1,4 @@
+import { isBrowser, isMobile, isTablet } from "react-device-detect"
 
 export const formatRelativeTime = (dateString: Date | undefined): string => {
   if (!dateString) return ""
@@ -49,3 +50,10 @@ export const formatTime = (time: number): string => {
     ? `${hours}:${paddedMinutes}:${paddedSeconds}`
     : `${minutes}:${paddedSeconds}`;
 };
+
+export const getDevice = () => {
+    if (isMobile) return { device: "mobile", limit: 2}
+    else if (isTablet) return { device: "tablet", limit: 2}
+    else if (isBrowser) return { device: "laptop", limit: 5}
+    else return { device: "desktop", limit: 6}
+}

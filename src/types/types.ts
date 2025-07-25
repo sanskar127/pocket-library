@@ -1,4 +1,4 @@
-import type { QueryFunctionContext } from "@tanstack/react-query"
+import type { UseInfiniteQueryResult } from "@tanstack/react-query"
 
 export interface VideoInterface {
   id: string;
@@ -18,15 +18,38 @@ export interface DirectoryInterface {
   url: string;
 }
 
-type ItemType = VideoInterface | DirectoryInterface
+export type ItemType = VideoInterface | DirectoryInterface
 
-export interface ResponseInterface {
-  data: ItemType[]
-  isMore: boolean
+type DeviceType = "mobile" | "tablet" | "laptop" | "desktop"
+
+export interface DeviceInterface {
+  (): { 
+    device: DeviceType 
+    limit: number
+  }
 }
 
-export type QueryKeyType = ['media', string, number]
+export type QueryKeyType = ['media', string]
 
-export interface fetchInterface {
-  (context: QueryFunctionContext<QueryKeyType>): Promise<ResponseInterface>
+
+export interface ResponseInterface {
+  media: ItemType[]
+  hasMore: boolean
+}
+
+export interface InfiniteResponseData {
+  pages: ResponseInterface[]
+  pageParams: unknown[]
+}
+
+export interface UseFetchMediaResult {
+  data: InfiniteResponseData | undefined,
+  hasNextPage: boolean,
+  fetchNextPage: () => void,
+  isPending: boolean,
+  isError: boolean
+}
+
+export interface UseFetchMediaInterface {
+  (): UseInfiniteQueryResult<ResponseInterface, Error>
 }

@@ -1,5 +1,4 @@
 import { useParams } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { isMobile, isTablet, MobileView } from "react-device-detect";
 
 import VideoPlayer from "../components/ui/VideoPlayer";
@@ -10,24 +9,18 @@ import { formatRelativeTime } from "../utils";
 import type { ItemType, VideoInterface } from "../types/types";
 import VideoNotFound from "../components/common/VideoNotFound";
 import { IoMdCloudDownload } from "react-icons/io";
+import type { FC } from "react";
 
-interface dataInterface {
+interface WatchInterface {
   data: ItemType[]
-  isMore: boolean
+  isPending: boolean
 }
 
-const Watch = () => {
+const Watch: FC<WatchInterface> = ({ data, isPending }) => {
   const { videoId } = useParams<{ videoId: string }>();
-  const queryClient = useQueryClient();
 
-  // Flatten cached query data and find the relevant video entry
-  const cache = queryClient.getQueriesData<dataInterface>({ queryKey: ["media"] });
-  const entries: ItemType[] = cache.flatMap(([_, response]) => response?.data)
-  const entry = (entries as VideoInterface[]).find(item => item.id === videoId);
-
-  const filteredVideos = entries.filter(
-    (item) => item.id !== videoId && item.type !== "directory"
-  ) as VideoInterface[];
+  const entry: VideoInterface = data.find(item => item.type === 'video/mp4' && item.id === videoId)
+  const relatedVideos: VideoInterface[] = data.filter(item => item.type === 'video/mp4' && item.id !== videoId)
 
   if (!entry) {
     return (
@@ -57,13 +50,12 @@ const Watch = () => {
             >
               <IoMdCloudDownload className="w-4 h-4" />
               <span>Download</span>
-              {/* <span className="text-gray-400">({formatSize(entry.size)})</span> */}
             </a>
           </div>
 
           {/* Related Videos */}
           <div className="grid gap-4 px-4 pb-6">
-            {filteredVideos.map((item) => (
+            {relatedVideos.map((item) => (
               <Video key={item.id} details={item} />
             ))}
           </div>
@@ -71,18 +63,6 @@ const Watch = () => {
       ) : (
         <div className="relative">
           <VideoPlayer content={entry} />
-
-          {/* Download Button for Desktop */}
-          {/* <div className="absolute top-4 right-4 z-10">
-            <a
-              href={entry.url}
-              download
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition"
-            >
-              <FiDownloadCloud className="w-5 h-5" />
-              Download ({formatSize(entry.size)})
-            </a>
-          </div> */}
         </div>
       )}
     </>
