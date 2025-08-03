@@ -21,7 +21,7 @@ const App = () => {
       loader={<div className="text-center text-lg text-white">Loading...</div>}
     >
       <Routes>
-        <Route path='/' element={<Home data={entries} isPending={isPending} />} />
+        <Route path='*' element={<Home data={entries} isPending={isPending} />} />
         <Route path='watch/:videoId' element={<Watch data={entries} isPending={isPending} />} />
       </Routes>
     </InfiniteScroll>

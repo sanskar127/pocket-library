@@ -1,11 +1,11 @@
-import { useLocation } from "react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import usePathTracker from "./usePathTracker"
 import type { QueryKeyType, ResponseInterface, UseFetchMediaInterface } from "../types/types";
 import { getDevice } from "../utils";
 
 
 const useFetchMedia: UseFetchMediaInterface = () => {
-    const { pathname } = useLocation()
+    const pathname = usePathTracker()
     const { device, limit} = getDevice()
 
     const fetchVideos = async ({ pageParam: offset = 0 }): Promise<ResponseInterface> => {

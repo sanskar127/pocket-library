@@ -22,6 +22,8 @@ const Watch: FC<WatchInterface> = ({ data, isPending }) => {
   const entry: VideoInterface = data.find(item => item.type === 'video/mp4' && item.id === videoId)
   const relatedVideos: VideoInterface[] = data.filter(item => item.type === 'video/mp4' && item.id !== videoId)
 
+  console.log(data)
+
   if (!entry) {
     return (
       <VideoNotFound />
