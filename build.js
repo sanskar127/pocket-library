@@ -9,9 +9,19 @@ esbuild.build({
   platform: 'node',
   target: 'node20',
   outfile: 'dist/server.js',
-  external: [], // Add modules here if you want to exclude them
+  external: [],
 }).then(() => {
-  const outputPath = path.join(__dirname, 'dist', 'package.json');
+  const outputFilePath = path.join(__dirname, 'dist', 'server.js');
+  
+  // Read the built file content
+  const content = fs.readFileSync(outputFilePath, 'utf8');
+
+  // Prepend the shebang line
+  const shebang = '#!/usr/bin/env node\n';
+  fs.writeFileSync(outputFilePath, shebang + content, 'utf8');
+
+  // Generate package.json
+  const packageJsonPath = path.join(__dirname, 'dist', 'package.json');
   const data = {
     name: "pocket",
     version: "1.0.0",
@@ -22,8 +32,7 @@ esbuild.build({
     dependencies: {}
   };
 
-  // Convert data to JSON string before writing
-  fs.writeFileSync(outputPath, JSON.stringify(data, null, 2), 'utf8');
+  fs.writeFileSync(packageJsonPath, JSON.stringify(data, null, 2), 'utf8');
   console.log('Build successful and package.json generated.');
 }).catch((err) => {
   console.error(err);

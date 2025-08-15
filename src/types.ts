@@ -26,7 +26,6 @@ type DeviceType = "mobile" | "tablet" | "laptop" | "desktop"
 
 export interface requestBodyInterface {
   pathname: string;
-  device: DeviceType;
   limit: number;
   offset: number;
 }
@@ -34,8 +33,6 @@ export interface requestBodyInterface {
 
 export interface ChunkInterface {
   (
-    entries: string[],
-    initialLength: number,
     limit: number,
     offset: number
   ): {
@@ -46,5 +43,5 @@ export interface ChunkInterface {
 
 
 export interface GetInitialLength {
-  (device: DeviceType): number
+  (device: DeviceType): { initialLimit: number, limit: number }
 }

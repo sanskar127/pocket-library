@@ -1,6 +1,6 @@
-import { cacheDir, videosDir } from './constants';
+import { cacheDir, videosDir, entries, isOffsetReset, chunkedData, setChunkedData } from './states';
 import { ChunkInterface, GetInitialLength, ScanVideosInterface } from './types';
-import { readdir, stat } from 'fs/promises';
+import { stat, readdir } from 'fs/promises';
 import qrcode from 'qrcode-terminal';
 import ffmpeg from 'fluent-ffmpeg';
 import crypto from 'crypto';
@@ -12,6 +12,9 @@ import os from 'os';
 const sanitizeFileName = (name: string): string => {
   return name.replace(/[^a-zA-Z0-9\-_.]/g, '_');
 };
+
+// Utility to check and return the limit validation result
+export const validateLimit = (limit: number): boolean => !isNaN(limit) && limit > 0;
 
 // Generate short ID from a given input
 export const generateShortId = (input: string): string => {
@@ -98,7 +101,7 @@ export const getLocalIPAddress = (): string | null => {
 const generateThumbnail = (videoPath: string, outputPath: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     ffmpeg(videoPath)
-      .inputOptions(['-ss', '5']) // Seek to 5 seconds
+      .inputOptions(['-ss', '2']) // Seek to 2 seconds
       .outputOptions([
         '-vframes', '1',
         '-vf', 'scale=320:180',
@@ -155,26 +158,28 @@ export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
   }
 };
 
-export const getLimit: GetInitialLength = (device) => {
-  if (device === 'mobile') return 3
-  if (device === 'tablet') return 10
-  if (device === 'laptop') return 20
-  if (device === 'desktop') return 30
+const getLimit: GetInitialLength = (device) => {
+  if (device === 'mobile') return { initialLimit: 3, limit: 2 };
+  if (device === 'tablet') return { initialLimit: 10, limit: 2 };
+  if (device === 'laptop') return { initialLimit: 20, limit: 5 };
+  if (device === 'desktop') return { initialLimit: 30, limit: 6 };
 
-  return -1
+  return { initialLimit: -1, limit: -1 };
 }
 
-export const getChunk: ChunkInterface = (entries, initialLength, limit, offset) => {
-  if (entries.length <= initialLength) return {
-    chunk: entries,
-    hasMore: false
-  }
+export const getChunk: ChunkInterface = (limit, offset) => {
+  const hasMore = offset + limit < entries.length;
 
-  return {
-    chunk: (offset === 0) ? entries.slice(offset, initialLength) : entries.slice(offset, offset + limit),
-    hasMore: (offset + limit) < entries.length ? true : false
-  }
-}
+  if (isOffsetReset) setChunkedData(null);
+  if (entries.length <= limit) return { chunk: entries, hasMore: false };
+
+  let chunk = entries.slice(offset, offset + limit);
+
+  if (chunkedData.length !== 0) chunk = chunk.filter(item => !chunkedData.includes(item));
+
+  setChunkedData(chunk);
+  return { chunk, hasMore };
+};
 
 // Generate QR code
 export const generateQrCode = (data: string): Promise<string> => {

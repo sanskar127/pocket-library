@@ -1,7 +1,7 @@
-import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, mediaChecker, getChunk, getLimit } from './utils';
+import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, mediaChecker, getChunk, validateLimit } from './utils';
+import { videosDir, cacheDir, isOffsetReset, setIsOffsetReset, setEntries } from './states';
 import { DirectoryInterface, requestBodyInterface, responseType } from './types';
 import express, { Express, Request, Response } from 'express';
-import { videosDir, cacheDir } from './constants';
 import { existsSync, mkdirSync } from 'fs';
 import fs from 'fs/promises';
 import cors from 'cors';
@@ -14,16 +14,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
-// Utility to check and return the limit validation result
-const validateLimit = (limit: number): boolean => !isNaN(limit) && limit > 0;
-
 app.post('/api/videos', async (request: Request, response: Response) => {
     const media: responseType[] = [];
-    const { pathname, device, limit, offset = 0 } = request.body as requestBodyInterface;
-    const decodedDir = decodeURIComponent(pathname as string);
+    const { pathname, limit, offset = 0 }: requestBodyInterface = request.body;
+
+    const decodedDir = decodeURIComponent(pathname);
+    setIsOffsetReset(offset);
+    
     const navigationPath = decodedDir ? path.join(videosDir, decodedDir) : videosDir;
     const safePath = path.normalize(navigationPath);
-    const initialLength = getLimit(device);
 
     if (!safePath.startsWith(path.normalize(videosDir))) return response.status(403).json({ error: 'Forbidden directory access' });
     if (!existsSync(safePath)) return response.status(404).json({ error: "Directory not found" });
@@ -31,15 +30,15 @@ app.post('/api/videos', async (request: Request, response: Response) => {
 
     try {
         // Use map with async mediaChecker and filter only valid items
-        const entries = (await Promise.all(
-            (await fs.readdir(navigationPath)).map(async (item) => {
-                // Check if item has media
-                const isMedia = await mediaChecker(path.join(navigationPath, item));
-                return isMedia ? item : null; // Keep item if it's valid media
-            })
-        )).filter((item) => item !== null); // Filter out null values
+        if (isOffsetReset) {
+            setEntries(null);
+            await Promise.all((await fs.readdir(navigationPath)).map(async item => {
+                if (await mediaChecker(path.join(navigationPath, item))) 
+                    setEntries(item);
+            }));
+        }
 
-        const { chunk, hasMore } = getChunk(entries, initialLength, limit, offset)
+        const { chunk, hasMore } = getChunk(limit, offset);
 
         // Process directories and videos concurrently
         const promises = chunk.map(async (item) => {
@@ -48,7 +47,7 @@ app.post('/api/videos', async (request: Request, response: Response) => {
 
             // Check if the item is a directory
             if (stats.isDirectory()) {
-                const name = path.basename(currentPath)
+                const name = path.basename(currentPath);
                 media.push({
                     id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
                     name,
