@@ -1,5 +1,5 @@
-import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, mediaChecker, getChunk, validateLimit } from './utils';
-import { videosDir, cacheDir, isOffsetReset, setIsOffsetReset, setEntries } from './states';
+import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, getChunk, validateLimit, setMediaFiles } from './utils';
+import { videosDir, cacheDir, isOffsetReset, setIsOffsetReset, entries } from './states';
 import { DirectoryInterface, requestBodyInterface, responseType } from './types';
 import express, { Express, Request, Response } from 'express';
 import { existsSync, mkdirSync } from 'fs';
@@ -20,7 +20,7 @@ app.post('/api/videos', async (request: Request, response: Response) => {
 
     const decodedDir = decodeURIComponent(pathname);
     setIsOffsetReset(offset);
-    
+
     const navigationPath = decodedDir ? path.join(videosDir, decodedDir) : videosDir;
     const safePath = path.normalize(navigationPath);
 
@@ -30,47 +30,42 @@ app.post('/api/videos', async (request: Request, response: Response) => {
 
     try {
         // Use map with async mediaChecker and filter only valid items
-        if (isOffsetReset) {
-            setEntries(null);
-            await Promise.all((await fs.readdir(navigationPath)).map(async item => {
-                if (await mediaChecker(path.join(navigationPath, item))) 
-                    setEntries(item);
-            }));
-        }
+        if (isOffsetReset) await setMediaFiles(navigationPath);
 
         const { chunk, hasMore } = getChunk(limit, offset);
 
         // Process directories and videos concurrently
-        const promises = chunk.map(async (item) => {
+        const results = await Promise.all(chunk.map(async (item) => {
             const currentPath = path.join(navigationPath, item);
             const stats = await fs.stat(currentPath);
 
-            // Check if the item is a directory
+            // If directory
             if (stats.isDirectory()) {
                 const name = path.basename(currentPath);
-                media.push({
+                return {
                     id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
                     name,
                     type: 'directory',
                     url: name,
-                } as DirectoryInterface);
+                } as DirectoryInterface;
             }
 
-            // Check if the item is a video file (.mp4)
+            // If video
             const extname = path.extname(item).toLowerCase();
             if (extname === '.mp4') {
                 try {
-                    const video = await scanVideos(currentPath, '.mp4');
-                    if (video) {
-                        media.push(video);
-                    }
+                    return await scanVideos(currentPath, '.mp4');
                 } catch (videoError) {
                     console.error(`Error scanning video at ${currentPath}:`, videoError);
                 }
             }
-        });
 
-        await Promise.all(promises);  // Wait for all items to be processed concurrently
+            return null; // Skip non-directories/non-mp4
+        }));
+
+        const filteredResults = results.filter((item): item is responseType => item !== null);
+        media.push(...filteredResults);
+
         response.status(200).json({ media, hasMore });
     } catch (error) {
         console.error(`Error scanning directory ${navigationPath}:`, error);

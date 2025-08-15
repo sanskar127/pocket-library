@@ -1,4 +1,4 @@
-import { cacheDir, videosDir, entries, isOffsetReset, chunkedData, setChunkedData } from './states';
+import { cacheDir, videosDir, entries, isOffsetReset, chunkedData, setChunkedData, setEntries } from './states';
 import { ChunkInterface, GetInitialLength, ScanVideosInterface } from './types';
 import { stat, readdir } from 'fs/promises';
 import qrcode from 'qrcode-terminal';
@@ -157,6 +157,33 @@ export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
     return null;  // Returning null for failed video processing
   }
 };
+
+export async function setMediaFiles(navigationPath: string) {
+  setEntries(null);
+  let statsEntries: Array<{ item: string, mtime: Date } | null> = [];
+
+  try {
+    const items = await readdir(navigationPath);
+    statsEntries = await Promise.all(items.map(async item => {
+      try {
+        const filePath = path.join(navigationPath, item);
+        if (await mediaChecker(filePath)) {
+          const { mtime } = await stat(filePath);
+          return { item, mtime };
+        }
+      } catch (error) {
+        console.error(`Error processing file ${item}:`, error);
+      }
+      return null;
+    }));
+  } catch (error) {
+    console.error('Error reading directory:', error);
+  }
+
+  const validEntries = statsEntries.filter(entry => entry !== null);
+  validEntries.sort((a, b) => b.mtime.getTime() - a.mtime.getTime()).forEach(({ item }) => setEntries(item));
+}
+
 
 const getLimit: GetInitialLength = (device) => {
   if (device === 'mobile') return { initialLimit: 3, limit: 2 };
