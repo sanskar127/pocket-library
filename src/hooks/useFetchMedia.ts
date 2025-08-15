@@ -1,21 +1,19 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import usePathTracker from "./usePathTracker"
 import type { QueryKeyType, ResponseInterface, UseFetchMediaInterface } from "../types/types";
-import { getDevice } from "../utils";
-
+import { getLimit } from "../utils";
 
 const useFetchMedia: UseFetchMediaInterface = () => {
     const pathname = usePathTracker()
-    const { device, limit} = getDevice()
+    const { initialLimit, limit } = getLimit()
 
-    const fetchVideos = async ({ pageParam: offset = 0 }): Promise<ResponseInterface> => {
+    const fetchVideos = async ({ pageParam: offset }: { pageParam: number }): Promise<ResponseInterface> => {
         const res = await fetch(`/api/videos/`, {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 pathname,
-                device,
-                limit,
+                limit: offset === 0 ? initialLimit : limit,
                 offset
             })
         })

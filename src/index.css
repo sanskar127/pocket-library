@@ -11,6 +11,10 @@
     --color-foreground: #ffffff;
 }
 
+body {
+  background-color: var(--dark);
+}
+
 .slider {
   @apply appearance-none h-1 rounded-lg bg-gray-300;
 }

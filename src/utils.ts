@@ -51,9 +51,9 @@ export const formatTime = (time: number): string => {
     : `${minutes}:${paddedSeconds}`;
 };
 
-export const getDevice = () => {
-    if (isMobile) return { device: "mobile", limit: 2}
-    else if (isTablet) return { device: "tablet", limit: 2}
-    else if (isBrowser) return { device: "laptop", limit: 5}
-    else return { device: "desktop", limit: 6}
+export const getLimit = () => {
+    if (isMobile) return { initialLimit: 3, limit: 2}
+    else if (isTablet) return { initialLimit: 10, limit: 2}
+    else if (isBrowser) return { initialLimit: 20, limit: 5}
+    else return { initialLimit: 30, limit: 6}
 }

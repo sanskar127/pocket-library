@@ -16,24 +16,18 @@ interface WatchInterface {
   isPending: boolean
 }
 
-const Watch: FC<WatchInterface> = ({ data, isPending }) => {
+const Watch: FC<WatchInterface> = ({ data }) => {
   const { videoId } = useParams<{ videoId: string }>();
 
-  const entry: VideoInterface = data.find(item => item.type === 'video/mp4' && item.id === videoId)
-  const relatedVideos: VideoInterface[] = data.filter(item => item.type === 'video/mp4' && item.id !== videoId)
+  const entry = data.find(item => item.type === 'video/mp4' && item.id === videoId) as VideoInterface
+  const relatedVideos = data.filter(item => item.type === 'video/mp4' && item.id !== videoId) as VideoInterface[]
 
-  console.log(data)
-
-  if (!entry) {
-    return (
-      <VideoNotFound />
-    );
-  }
+  if (!entry) return <VideoNotFound />
 
   return (
     <>
       {(isMobile || isTablet) ? (
-        <MobileView className="bg-dark text-foreground min-h-screen">
+        <MobileView className="text-foreground min-h-screen">
           {/* Video Display */}
           <MobilePlayer content={entry} />
 
