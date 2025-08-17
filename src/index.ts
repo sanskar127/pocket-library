@@ -1,8 +1,10 @@
-import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, getChunk, validateLimit, setMediaFiles } from './utils';
-import { videosDir, cacheDir, isOffsetReset, setIsOffsetReset, entries } from './states';
-import { DirectoryInterface, requestBodyInterface, responseType } from './types';
+import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, getChunk, validateLimit, setMediaFiles, videoFormats, imageFormats, scanImages, convertToMP4, transcodingHLS } from './utils';
+import { DirectoryInterface, ImageExtension, requestBodyInterface, responseType, VideoExtension } from './types';
+import { videosDir, cacheDir, isOffsetReset, setIsOffsetReset, playbackDir } from './states';
 import express, { Express, Request, Response } from 'express';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync } from 'fs';
+// import ffmpegPath from 'ffmpeg-static';
+// import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs/promises';
 import cors from 'cors';
 import path from 'path';
@@ -46,15 +48,26 @@ app.post('/api/videos', async (request: Request, response: Response) => {
                     id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
                     name,
                     type: 'directory',
+                    modifiedAt: stats.mtime,
                     url: name,
                 } as DirectoryInterface;
             }
 
-            // If video
             const extname = path.extname(item).toLowerCase();
-            if (extname === '.mp4') {
+
+            // If video
+            if (videoFormats.hasOwnProperty(extname)) {
                 try {
-                    return await scanVideos(currentPath, '.mp4');
+                    return await scanVideos(currentPath, extname as VideoExtension);
+                } catch (videoError) {
+                    console.error(`Error scanning video at ${currentPath}:`, videoError);
+                }
+            }
+
+            // If image
+            if (imageFormats.hasOwnProperty(extname)) {
+                try {
+                    return await scanImages(currentPath, extname as ImageExtension);
                 } catch (videoError) {
                     console.error(`Error scanning video at ${currentPath}:`, videoError);
                 }
@@ -73,9 +86,39 @@ app.post('/api/videos', async (request: Request, response: Response) => {
     }
 });
 
+app.post('/api/playback', async (request: Request, response: Response) => {
+    const { video }: { video: string } = request.body;
+
+    try {
+        const safeName = path.basename(video, path.extname(video));
+        const videoPath = path.join(videosDir, video);
+        const playbackPath = path.join(playbackDir, safeName);
+        const playlistPath = path.join(playbackPath, 'playlist.m3u8');
+        const doneFile = path.join(playbackPath, '.done');
+        const lockFile = path.join(playbackPath, '.lock');
+
+        // Incomplete state if no .done or missing playlist
+        const isIncomplete =
+            !existsSync(doneFile) ||
+            !existsSync(playlistPath) ||
+            readdirSync(playbackPath).filter(f => f.endsWith('.ts')).length === 0;
+
+        if (isIncomplete && !existsSync(lockFile)) {
+            console.log('🔁 Resuming or starting transcoding...');
+            await transcodingHLS(videoPath, playbackPath);
+        }
+
+        response.sendFile('playlist.m3u8', { root: playbackPath });
+    } catch (err) {
+        console.error('❌ Playback error:', err);
+        response.status(500).send('Error preparing playback.');
+    }
+});
+
+
 app.get('/owner', (_, response: Response) => response.json({
     message: "Backend service for 'Pocket Media Library,' originally created and maintained by Sanskar (a.k.a. 5agmi), since July 2025."
-}))
+}));
 
 // Static file serving
 app.use('/', express.static(__dirname));
@@ -83,6 +126,9 @@ app.use('/videos', express.static(videosDir));
 app.use('/thumbnails', express.static(cacheDir));
 
 app.listen(port, async () => {
+    // Configure FFmpeg path
+    // ffmpeg.setFfmpegPath(ffmpegPath as string);
+
     // Create cache dir if missing
     if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
 

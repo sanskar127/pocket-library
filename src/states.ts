@@ -1,17 +1,14 @@
 import path from 'path';
 
 export const videosDir: string = process.cwd();
-// export const videosDir: string = 'public';
 export const cacheDir: string = path.join(videosDir, '.cache');
+export const playbackDir: string = path.join(cacheDir, 'playback');
 
 export let isOffsetReset: boolean = false;
-// export let prevPathname: string = "";
 export let entries: string[] = [];
 export let chunkedData: string[] = [];
 
 export function setIsOffsetReset(offset: number) { isOffsetReset = offset === 0 ? true : false }
-
-// export function setPrevPathname(data: string) { prevPathname = data }
 
 export function setEntries(data: string | null) {
     if (data === null) entries = [];

@@ -1,16 +1,41 @@
-import { cacheDir, videosDir, entries, isOffsetReset, chunkedData, setChunkedData, setEntries } from './states';
-import { ChunkInterface, GetInitialLength, ScanVideosInterface } from './types';
-import { stat, readdir } from 'fs/promises';
+import { cacheDir, videosDir, entries, isOffsetReset, chunkedData, setChunkedData, setEntries, playbackDir } from './states';
+import { ChunkInterface, GetInitialLength, ScanVideosInterface, VideoExtension, ImageExtension, ScanImagesInterface } from './types';
+import { stat, readdir, mkdir } from 'fs/promises';
 import qrcode from 'qrcode-terminal';
 import ffmpeg from 'fluent-ffmpeg';
 import crypto from 'crypto';
 import path from 'path';
-import fs from 'fs';
+import fs, { existsSync } from 'fs';
 import os from 'os';
 
 // Sanitize file names for Windows (and general safety)
 const sanitizeFileName = (name: string): string => {
   return name.replace(/[^a-zA-Z0-9\-_.]/g, '_');
+};
+
+export const videoFormats: Record<VideoExtension, string> = {
+  ".mp4": "video/mp4",
+  ".mov": "video/quicktime",
+  ".avi": "video/avi",
+  ".mkv": "video/x-matroska",
+  ".wmv": "video/x-ms-wmv",
+  ".flv": "video/x-flv",
+  ".f4v": "video/mp4",
+  ".webm": "video/webm",
+  ".mpeg": "video/mpeg",
+  ".mpg": "video/mpeg",
+};
+
+export const imageFormats: Record<ImageExtension, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".bmp": "image/bmp",
+  ".tiff": "image/tiff",
+  ".tif": "image/tiff",
+  ".svg": "image/svg+xml"
 };
 
 // Utility to check and return the limit validation result
@@ -37,37 +62,38 @@ export const getDuration = (videoFullPath: string): Promise<number> => {
   });
 };
 
-export const mediaChecker = async (dir: string): Promise<boolean> => {
+export const mediaChecker = async (targetPath: string): Promise<boolean> => {
   try {
-    const stats = await stat(dir);
+    const stats = await stat(targetPath);
 
-    // Skip .cache directories
-    if (path.basename(dir) === '.cache') return false;
+    // Skip .cache or hidden dirs
+    if (path.basename(targetPath).startsWith('.') || path.basename(targetPath) === '.cache') {
+      return false;
+    }
 
-    // If it's a file and not an mp4, return false
-    if (!stats.isDirectory() && path.extname(dir).toLowerCase() === '.mp4') return true;
+    // If it's a supported video file
+    const ext = path.extname(targetPath).toLowerCase();
+    if (stats.isFile() && (videoFormats.hasOwnProperty(ext) || imageFormats.hasOwnProperty(ext))) {
+      return true;
+    }
 
-    // If it's a directory, check its contents
+    // If it's a directory, scan its contents recursively
     if (stats.isDirectory()) {
-      const entries = await readdir(dir, { withFileTypes: true });
+      const entries = await readdir(targetPath, { withFileTypes: true });
 
-      // Loop through the directory entries to find any mp4 file or subdirectory with mp4s
       for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
+        const fullPath = path.join(targetPath, entry.name);
 
-        if (entry.isDirectory()) {
-          const found = await mediaChecker(fullPath);
-          if (found) return true;  // Return true if a mp4 is found in any subdirectory
-        } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.mp4') {
-          return true;  // Return true if an mp4 file is found
+        // Recursively check subdirectories and files
+        if (await mediaChecker(fullPath)) {
+          return true;
         }
       }
     }
 
-    // Return false if no mp4 file is found
-    return false;
+    return false; // No valid media found
   } catch (error) {
-    console.error('Error checking media:', error);
+    console.error(`Error in mediaChecker for path ${targetPath}:`, error);
     return false;
   }
 };
@@ -98,13 +124,15 @@ export const getLocalIPAddress = (): string | null => {
 };
 
 // Generate thumbnail using ffmpeg
-const generateThumbnail = (videoPath: string, outputPath: string): Promise<void> => {
+const generateThumbnail = (videoPath: string, outputPath: string, duration: number): Promise<void> => {
   return new Promise((resolve, reject) => {
+    const seekTime = Math.floor(duration / 2);
+
     ffmpeg(videoPath)
-      .inputOptions(['-ss', '2']) // Seek to 2 seconds
+      .inputOptions(['-ss', String(seekTime)])
       .outputOptions([
         '-vframes', '1',
-        '-vf', 'scale=320:180',
+        '-vf', 'scale=480:270:force_original_aspect_ratio=decrease', // <-- updated scale filter
         '-c:v', 'libwebp',
         '-qscale:v', '80',
         '-preset', 'default'
@@ -117,17 +145,20 @@ const generateThumbnail = (videoPath: string, outputPath: string): Promise<void>
 };
 
 // Get thumbnail for a video, creating it if necessary
-export const getThumbnail = async (videoFullPath: string): Promise<string> => {
-  const safeName = sanitizeFileName(path.basename(videoFullPath)).replace(/\.mp4$/i, '.webp');
-  const thumbPath = path.join(cacheDir, safeName);
-
+export const getThumbnail = async (videoFullPath: string, duration: number): Promise<string> => {
   try {
+    const ext = path.extname(videoFullPath);
+    const relative = path.relative(videosDir, videoFullPath).replace(/\\/g, '/');
+    const dir = path.join(cacheDir, path.dirname(relative));
+    const thumbPath = path.join(dir, `${sanitizeFileName(path.basename(videoFullPath, ext))}.webp`);
+
+    if (!existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
     if (!thumbnailExistsAndValid(thumbPath)) {
-      await generateThumbnail(videoFullPath, thumbPath);
+      await generateThumbnail(videoFullPath, thumbPath, duration);
     }
 
-    const relativePath = path.relative(cacheDir, thumbPath);
-    return `/thumbnails/${relativePath}`;
+    return `/thumbnails/${path.relative(cacheDir, thumbPath).replace(/\\/g, '/')}`;
   } catch (error: any) {
     console.error(`❌ Failed to create thumbnail for ${videoFullPath}: ${error.message}`);
     throw error;
@@ -135,19 +166,139 @@ export const getThumbnail = async (videoFullPath: string): Promise<string> => {
 };
 
 // Retrieve video details and create a response object for a video file
-export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
+export const scanImages: ScanImagesInterface = async (filepath, extension) => {
   try {
     const relativeFilePath = path.relative(videosDir, filepath).replace(/\\/g, '/');
     const stats = await stat(filepath);
-    const duration = await getDuration(filepath);
-    const thumbnail = await getThumbnail(filepath);
 
     return {
       id: generateShortId(relativeFilePath + stats.mtimeMs),
       name: path.basename(filepath, extension),
       size: stats.size,
       modifiedAt: stats.mtime,
-      type: 'video/mp4',
+      type: imageFormats[extension],
+      url: `/videos/${relativeFilePath}`,
+      thumbnail: `/videos/${relativeFilePath}`
+    };
+  } catch (error) {
+    console.error(`Error processing video ${filepath}:`, error);
+    return null;  // Returning null for failed video processing
+  }
+};
+
+// Function to convert videos to MP4
+export async function convertToMP4(inputFilePath: string, outputFilePath: string) {
+  try {
+    // Extract directory path of the output file
+    const outputDir = path.dirname(outputFilePath);
+
+    // Ensure the output directory exists
+    await mkdir(outputDir, { recursive: true });
+
+    // Start conversion
+    ffmpeg(inputFilePath)
+      .output(outputFilePath)
+      .videoCodec('libx264')  // H.264 codec for MP4
+      .audioCodec('aac')  // AAC audio codec for MP4
+      .on('start', commandLine => {
+        console.log(`FFmpeg command: ${commandLine}`);
+      })
+      .on('end', () => {
+        console.log(`Conversion finished: ${outputFilePath}`);
+      })
+      .on('error', (err) => {
+        console.error(`Error during conversion: ${err.message}`);
+      })
+      .run();
+  } catch (err: any) {
+    console.error(`Failed to create directory for output file: ${err.message}`);
+  }
+}
+
+export const transcodingHLS = async (videoFile: string, outputDir: string): Promise<string> => {
+  const lockFile = path.join(outputDir, '.lock');
+  const doneFile = path.join(outputDir, '.done');
+  const metaFile = path.join(outputDir, '.meta.json');
+
+  if (fs.existsSync(lockFile)) {
+    throw new Error('Transcoding is already in progress.');
+  }
+
+  fs.mkdirSync(outputDir, { recursive: true });
+  fs.writeFileSync(lockFile, ''); // Mark as in-progress
+
+  try {
+    let startSegment = 0;
+
+    // Resume if metadata exists
+    if (fs.existsSync(metaFile)) {
+      const meta = JSON.parse(fs.readFileSync(metaFile, 'utf-8'));
+      startSegment = meta.lastSegment + 1;
+    }
+
+    const segmentPattern = path.join(outputDir, '%03d.ts');
+    const playlistPath = path.join(outputDir, 'playlist.m3u8');
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(videoFile)
+        .videoFilters('format=yuv420p')
+        .outputOptions([
+          '-c:v', 'libx264',
+          '-level', '4.0',
+          '-start_number', String(startSegment),
+          '-hls_time', '10',
+          '-hls_list_size', '0',
+          '-hls_flags', '+append_list',
+          '-f', 'hls',
+          '-hls_segment_filename', segmentPattern,
+        ])
+        .output(playlistPath)
+        .on('start', (cmd) => {
+          console.log('FFmpeg command:', cmd);
+        })
+        .on('stderr', (line) => {
+          console.log('FFmpeg stderr:', line);
+        })
+        .on('end', () => {
+          console.log('✅ Transcoding finished');
+          // Update meta file
+          const tsFiles = fs.readdirSync(outputDir).filter(f => f.endsWith('.ts'));
+          const lastSegment = Math.max(...tsFiles.map(f => parseInt(f.replace('.ts', ''))));
+          fs.writeFileSync(metaFile, JSON.stringify({ lastSegment }, null, 2));
+
+          // Mark done
+          fs.writeFileSync(doneFile, 'done');
+          resolve();
+        })
+        .on('error', (err) => {
+          console.error('❌ FFmpeg error:', err.message);
+          reject(err);
+        })
+        .run();
+    });
+
+    return outputDir;
+  } finally {
+    if (fs.existsSync(lockFile)) {
+      fs.rmSync(lockFile);
+    }
+  }
+};
+
+// Retrieve video details and create a response object for a video file
+export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
+  try {
+    const stats = await stat(filepath);
+    const duration = await getDuration(filepath);
+    const thumbnail = await getThumbnail(filepath, duration);
+    const relativeFilePath = path.relative(videosDir, filepath).replace(/\\/g, '/');
+
+    return {
+      id: generateShortId(relativeFilePath + stats.mtimeMs),
+      name: path.basename(filepath, extension),
+      size: stats.size,
+      modifiedAt: stats.mtime,
+      type: videoFormats[extension],
       duration,
       url: `/videos/${relativeFilePath}`,
       thumbnail
