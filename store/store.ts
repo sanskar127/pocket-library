@@ -2,10 +2,12 @@ import { configureStore } from '@reduxjs/toolkit'
 import { setupListeners } from '@reduxjs/toolkit/query'
 import { mediaApi } from "@/api/mediaApi"
 import responseReducer from "@/features/responseSlice"
+import localRouterReducer from "@/features/localRouterSlice"
 
 export const store = configureStore({
   reducer: {
     response: responseReducer,
+    localRouter: localRouterReducer,
     [mediaApi.reducerPath]: mediaApi.reducer
   },
   middleware: getDefaultMiddleware => 
