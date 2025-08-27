@@ -4,17 +4,13 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 interface stateInterface {
     baseURL: string
     data: ItemType[],
-    isMore: boolean
-    offset: number
-    limit: number
+    hasMore: boolean
 }
 
 const initialState: stateInterface = {
     baseURL: "",
     data: [],
-    isMore: false,
-    offset: 0,
-    limit: 3
+    hasMore: false
 }
 
 export const responseSlice = createSlice({
@@ -24,20 +20,19 @@ export const responseSlice = createSlice({
         setBaseURL: (state, action: PayloadAction<string>) => {
             state.baseURL = action.payload
         },
-        setData: (state, action: PayloadAction<ItemType[]>) => {
-            state.data = [...state.data, ...action.payload]
+        setData: (state, action: PayloadAction<{ media: ItemType[], hasMore: boolean }>) => {
+            state.data = [...state.data, ...action.payload.media]
+            state.hasMore = action.payload.hasMore
         },
-        setIsMore: (state, action: PayloadAction<boolean>) => {
-            state.isMore = action.payload
+        setHasMore: (state, action: PayloadAction<boolean>) => {
+            state.hasMore = action.payload
         },
-        setLimit: (state, action:PayloadAction<number>) => {
-            state.limit = action.payload
-        },
-        setOffset: (state, action: PayloadAction<number>) => {
-            state.offset += action.payload
+        resetData: (state) => {
+            state.data = []
+            state.hasMore = false
         }
     }
 })
 
-export const { setBaseURL } = responseSlice.actions
+export const { setBaseURL, setData, setHasMore, resetData } = responseSlice.actions
 export default responseSlice.reducer

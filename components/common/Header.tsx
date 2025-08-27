@@ -1,16 +1,16 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from 'expo-router';
 
 export default function Header({ title }: { title: string }) {
   const navigation = useNavigation();
 
   return (
-    <View style={{ height: 60, backgroundColor: '#6200ee', paddingHorizontal: 16, justifyContent: 'center' }}>
+    <View className="h-15 bg-background px-4 py-6 flex-row items-center gap-4">
       <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Text style={{ color: 'white' }}>{'< Back'}</Text>
+        <Text className="text-white">{'< Back'}</Text>
       </TouchableOpacity>
-      <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>{title}</Text>
+      <Text className="text-white text-xl font-bold">{title}</Text>
     </View>
   );
 }

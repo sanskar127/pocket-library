@@ -1,30 +1,34 @@
 import { useGetMediaMutation } from '@/api/mediaApi'
-import { usePathname } from 'expo-router'
-import { useEffect } from 'react'
+import { RootState } from '@/store/store'
+import { useEffect, useMemo, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { setData, resetData } from "@/features/responseSlice"
 
 const useFetchMedia = () => {
-    const [getMedia, { data, isLoading, isError }] = useGetMediaMutation()
-    const fullpath = usePathname()
-    const pathname = fullpath?.replace('/dashboard', '')
-    const offset = 0
-    const limit = 3
-
-    console.log(pathname)
+    const [getMedia, { isLoading, isError }] = useGetMediaMutation()
+    const dispatch = useDispatch()
+    const routeHistory = useSelector((state: RootState) => state.localRouter.history)
+    const data = useSelector((state: RootState) => state.response.data)
+    const pathname = useMemo(() => routeHistory.join('/'), [routeHistory])
+    const [offset, setOffset] = useState<number>(0)
+    const limit = 6
 
     useEffect(() => {
-        // Define an async function inside the effect
         const fetchData = async () => {
             try {
-                await getMedia({ pathname, offset, limit }).unwrap()
+                const response = await getMedia({ pathname, offset, limit }).unwrap()
+                // Safely check and dispatch
+                if (response) {
+                    dispatch(resetData())
+                    dispatch(setData(response))
+                }
             } catch (e) {
-                // Handle the error
-                console.error(e)
+                console.error('Failed to fetch media:', e)
             }
         }
 
-        // Call the async function
         fetchData()
-    }, [getMedia, pathname])
+    }, [getMedia, pathname, offset, dispatch])
 
     return { data, isLoading, isError }
 }
