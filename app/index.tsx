@@ -81,7 +81,7 @@ export default function Welcome() {
 
             {/* Scan Button */}
             <Pressable
-              // onPress={handleScan}
+              onPress={() => router.push('/scanner')}
               className="h-16 w-16 items-center justify-center rounded-lg bg-white/10 border border-white/20 active:opacity-75"
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -100,7 +100,7 @@ export default function Welcome() {
               No history found.
             </Text>
           ) : (
-            <View className="space-y-2">
+            <View className="gap-2">
               <Text className='text-gray-500 text-lg font-semibold mb-4'>Past Connections</Text>
               {Object.keys(history).map((item) => (
                 <Pressable
