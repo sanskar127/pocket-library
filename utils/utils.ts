@@ -1,4 +1,4 @@
-import type { ItemType } from "./types/types";
+import type { ItemType } from "@/types/types";
 
 export const formatRelativeTime = (dateString: Date | undefined): string => {
   if (!dateString) return ""
@@ -51,12 +51,12 @@ export const formatTime = (time: number): string => {
     : `${minutes}:${paddedSeconds}`;
 };
 
-export const getLimit = () => {
-    if (window.innerWidth < 600) return { initialLimit: 3, limit: 2}
-    else if (window.innerWidth < 767) return { initialLimit: 10, limit: 2}
-    // else if (window.innerWidth < 1279) return { initialLimit: 15, limit: 3}
-    else if (window.innerWidth < 1920) return { initialLimit: 20, limit: 5}
-    else return { initialLimit: 30, limit: 6}
+export const getLimit = (width: number) => {
+  if (width < 600) return { initialLimit: 3, limit: 2 }
+  else if (width < 767) return { initialLimit: 10, limit: 2 }
+  else if (width < 1279) return { initialLimit: 15, limit: 3 }
+  else if (width < 1920) return { initialLimit: 20, limit: 5 }
+  else return { initialLimit: 30, limit: 6 }
 }
 
 function getGroupLabel(modified: string | Date): string {

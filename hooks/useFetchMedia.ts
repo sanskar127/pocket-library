@@ -3,6 +3,8 @@ import { RootState } from '@/store/store'
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setData, resetData } from "@/features/responseSlice"
+import { getLimit } from '@/utils/utils'
+import { Dimensions } from 'react-native'
 
 const useFetchMedia = () => {
     const [getMedia, { isLoading, isError }] = useGetMediaMutation()
@@ -11,15 +13,36 @@ const useFetchMedia = () => {
     const data = useSelector((state: RootState) => state.response.data)
     const pathname = useMemo(() => routeHistory.join('/'), [routeHistory])
     const [offset, setOffset] = useState<number>(0)
-    const limit = 6
+    const [deviceWidth, setDeviceWidth] = useState(Dimensions.get('window').width)
+    const { initialLimit, limit } = getLimit(deviceWidth)
 
+    // Handle screen dimension changes
+    useEffect(() => {
+        const handleDimensionChange = ({ window }: { window: any }) => {
+            setDeviceWidth(window.width)
+        }
+
+        const subscription = Dimensions.addEventListener('change', handleDimensionChange)
+
+        return () => {
+            subscription?.remove?.()
+        }
+    }, [])
+
+    // Fetch media data
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await getMedia({ pathname, offset, limit }).unwrap()
-                // Safely check and dispatch
+                const response = await getMedia({
+                    pathname,
+                    offset,
+                    limit: offset === 0 ? initialLimit : limit,
+                }).unwrap()
+
                 if (response) {
-                    dispatch(resetData())
+                    if (offset === 0) {
+                        dispatch(resetData())
+                    }
                     dispatch(setData(response))
                 }
             } catch (e) {
@@ -28,9 +51,9 @@ const useFetchMedia = () => {
         }
 
         fetchData()
-    }, [getMedia, pathname, offset, dispatch])
+    }, [pathname, offset, initialLimit, limit, dispatch, getMedia])
 
-    return { data, isLoading, isError }
+    return { data, isLoading, isError, setOffset }
 }
 
 export default useFetchMedia

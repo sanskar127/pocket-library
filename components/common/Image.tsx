@@ -1,34 +1,37 @@
 import type { FC } from 'react';
-import type { ImageInterface } from "../../types/types"
-import { NavLink } from 'react-router';
-import { formatSize, formatRelativeTime } from '../../utils';
+import type { ImageInterface } from '@/types/types';
+import { formatSize, formatRelativeTime } from '@/utils/utils';
+import { Link } from 'expo-router';
+import { View, Text, Image as RNImage } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 
 const Image: FC<{ details: ImageInterface }> = ({ details }) => {
-  const { name, modifiedAt, size, type, url } = details;
+  const { id, name, modifiedAt, size, type, url } = details;
+  const baseUrl = useSelector((state: RootState) => state.response.baseURL)
 
   return (
-    <div className="w-full lg:w-md flex flex-col h-full overflow-hidden transition-all">
-      <NavLink to={"#"} className="relative w-full" style={{ paddingTop: '56.25%' }}>
-        {
-          <img
-              src={url}
-              alt={`${name} thumbnail`}
-              className="bg-black absolute top-0 left-0 w-full h-full object-contain object-center"
-            />
-        }
-
-        <span className="absolute top-0 right-0 bg-black/70 text-white text-xs px-1.5 py-0.5">
+    <View className="w-full mb-4">
+      <Link href={`/view/${id}`} className="w-full aspect-[16/9] bg-black relative">
+        <RNImage
+          source={{ uri: (baseUrl + url) }}
+          resizeMode="contain"
+          className="absolute top-0 left-0 w-full h-full"
+        />
+        <Text className="absolute top-1 right-1 bg-black/70 text-white text-xs px-2 py-0.5 rounded">
           {formatRelativeTime(modifiedAt)}
-        </span>
-      </NavLink>
+        </Text>
+      </Link>
 
-      <div className="w-full flex flex-col gap-1 px-3 py-2">
-        <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white line-clamp-2">
+      <View className="px-3 py-2">
+        <Text numberOfLines={2} className="text-base font-semibold text-white">
           {name}
-        </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{formatSize(size)} • {type}</p>
-      </div>
-    </div>
+        </Text>
+        <Text className="text-xs text-gray-300 mt-0.5">
+          {formatSize(size)} • {type}
+        </Text>
+      </View>
+    </View>
   );
 };
 

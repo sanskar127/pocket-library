@@ -13,7 +13,7 @@ export default function Scanner() {
   const router = useRouter();
 
   // Use the custom hook to manage history state and persistence
-  const { addHistoryEntry, loading } = useHistoryStorage();
+  const { addHistoryEntry } = useHistoryStorage();
 
   const { width, height } = Dimensions.get('window');
 

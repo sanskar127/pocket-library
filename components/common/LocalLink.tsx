@@ -1,5 +1,5 @@
 import React from 'react'
-import { Pressable } from 'react-native'
+import { TouchableOpacity } from 'react-native'
 import { useDispatch } from 'react-redux'
 import { addRouteToHistory } from "@/features/localRouterSlice"
 
@@ -7,9 +7,10 @@ interface props {
     children: React.ReactNode
     to: string
     className?: string
+    style?: object
 }
 
-const LocalLink: React.FC<props> = ({ children, to, className }) => {
+const LocalLink: React.FC<props> = ({ children, to, className, style }) => {
     const dispatch = useDispatch()
 
     const handlePress = () => {
@@ -17,9 +18,9 @@ const LocalLink: React.FC<props> = ({ children, to, className }) => {
     }
 
     return (
-        <Pressable onPress={handlePress} className={className}>
+        <TouchableOpacity onPress={handlePress} className={className} style={style}>
             {children}
-        </Pressable>
+        </TouchableOpacity>
     )
 }
 

@@ -2,11 +2,12 @@ import { useDispatch, useSelector } from "react-redux"
 import { addRouteToHistory, removeLastRoute } from "@/features/localRouterSlice"
 import { RootState } from "@/store/store"
 import { BackHandler } from "react-native"
-import { usePathname } from "expo-router"
+import { usePathname, useRouter } from "expo-router"
 import { useEffect, useMemo } from "react"
 
 const useLocalRouter = (): [string, string, (path: string) => void, () => void] => {
   const dispatch = useDispatch()
+  const router = useRouter()
   const nativePathname = usePathname()
   const routeHistory = useSelector((state: RootState) => state.localRouter.history)
   const currentPath = routeHistory.length ? routeHistory[routeHistory.length - 1] : '/'
@@ -14,8 +15,9 @@ const useLocalRouter = (): [string, string, (path: string) => void, () => void] 
 
   useEffect(() => {
     const backAction = () => {
-      if (routeHistory.length === 0) BackHandler.exitApp()
-      if(nativePathname === '/dashboard') dispatch(removeLastRoute())
+      if ((nativePathname === '/dashboard') && routeHistory.length === 0) BackHandler.exitApp()
+      else if (nativePathname === '/dashboard') dispatch(removeLastRoute())
+      else router.back()
       return true; // Prevent default behavior (going back)
     };
 
@@ -25,7 +27,7 @@ const useLocalRouter = (): [string, string, (path: string) => void, () => void] 
     );
 
     return () => backHandler.remove(); // Cleanup on unmount
-  }, [routeHistory.length, dispatch, nativePathname]);
+  }, [routeHistory.length, dispatch, nativePathname, router]);
 
   const navigateTo = (path: string) => dispatch(addRouteToHistory(path))
   const goBack = () => dispatch(removeLastRoute())

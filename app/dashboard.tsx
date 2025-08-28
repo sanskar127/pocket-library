@@ -1,11 +1,14 @@
 import Directory from '@/components/common/Directory';
+import Image from '@/components/common/Image';
+import Video from '@/components/common/Video';
 import useFetchMedia from '@/hooks/useFetchMedia';
 import useLocalRouter from '@/hooks/useLocalRouter';
+import { DirectoryInterface, ImageInterface, VideoInterface } from '@/types/types';
 import { ScrollView, Text, View, SafeAreaView, ActivityIndicator } from 'react-native';
 
 export default function Dashboard() {
-  const { data, isLoading, isError } = useFetchMedia();
-  const [pathname, currentPath, setPathname, back] = useLocalRouter();
+  const { data, isLoading } = useFetchMedia();
+  useLocalRouter()
 
   if (isLoading) {
     return (
@@ -19,19 +22,20 @@ export default function Dashboard() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView className='py-2'>
-        <View className="w-full flex-col gap-4">
-          {data?.map((item) =>
-            item.type === 'directory' ? (
-              <Directory key={item.id} details={item} />
-            ) : (
-              <View
-                key={item.id}
-                className="bg-white/10 p-4 rounded-lg w-full"
-              >
-                <Text className="text-white text-lg">{item.name}</Text>
-              </View>
-            )
-          )}
+        <View className="w-full p-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {data.map(item => {
+            if (item.type === "directory") {
+              return <Directory key={item.id} details={item as DirectoryInterface} />;
+            }
+
+            if (item.type.startsWith("image/")) {
+              return <Image key={item.id} details={item as ImageInterface} />;
+            }
+
+            if (item.type.startsWith("video/")) {
+              return <Video key={item.id} details={item as VideoInterface} />;
+            }
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>
