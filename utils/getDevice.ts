@@ -1,1 +1,0 @@
-import Device from "expo-device"

@@ -1,44 +1,55 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import type { FC } from 'react';
 import type { VideoInterface } from '@/types/types';
 import { formatTime, formatSize, formatRelativeTime } from '@/utils/utils';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, Image as RNImage } from 'react-native';
-import { Link } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { useRouter } from 'expo-router';
 
-const Video: FC<{ details: VideoInterface }> = ({ details }) => {
+const screenWidth = Dimensions.get('window').width;
+
+const VideoCard: FC<{ details: VideoInterface }> = ({ details }) => {
   const { id, thumbnail, name, duration, modifiedAt, size, type } = details;
   const baseUrl = useSelector((state: RootState) => state.response.baseURL)
+  const router = useRouter()
 
   return (
-    <View className="w-full mb-4">
-      <Link href={`/watch/${id}`} className="w-full aspect-[16/9] bg-black relative">
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.videoWrapper} onPress={() => router.push(`/watch/${id}`)}>
         {thumbnail ? (
-          <RNImage
-            source={{ uri: (baseUrl + thumbnail) }}
+          <Image
+            source={{ uri: baseUrl + thumbnail }}
             resizeMode="contain"
-            className="absolute top-0 left-0 w-full h-full"
+            style={styles.thumbnail}
           />
         ) : (
-          <View className="absolute top-0 left-0 w-full h-full items-center justify-center border-2 border-primary">
-            <Ionicons name="videocam-outline" size={64} color="#4f46e5" />
+          <View style={styles.placeholder}>
+            <Ionicons name="videocam" size={64} color="#007bff" style={styles.icon} />
           </View>
         )}
 
-        <Text className="absolute top-1 right-1 bg-black/70 text-white text-xs px-2 py-0.5 rounded">
-          {formatRelativeTime(modifiedAt)}
-        </Text>
-        <Text className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-2 py-0.5 rounded">
-          {formatTime(duration)}
-        </Text>
-      </Link>
+        <View style={styles.timestampTop}>
+          <Text style={styles.timestampText}>{formatRelativeTime(modifiedAt)}</Text>
+        </View>
+        <View style={styles.timestampBottom}>
+          <Text style={styles.timestampText}>{formatTime(duration)}</Text>
+        </View>
+      </TouchableOpacity>
 
-      <View className="px-3 py-2">
-        <Text numberOfLines={2} className="text-base font-semibold text-white">
+      <View style={styles.infoContainer}>
+        <Text style={styles.title} numberOfLines={2}>
           {name}
         </Text>
-        <Text className="text-xs text-gray-300 mt-0.5">
+        <Text style={styles.meta}>
           {formatSize(size)} • {type}
         </Text>
       </View>
@@ -46,4 +57,77 @@ const Video: FC<{ details: VideoInterface }> = ({ details }) => {
   );
 };
 
-export default Video;
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    maxWidth: screenWidth * 0.95,
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  videoWrapper: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: 16 / 9,
+  },
+  thumbnail: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'black',
+  },
+  placeholder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    borderWidth: 2,
+    borderColor: '#007bff',
+    backgroundColor: '#f9f9f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    marginBottom: 8,
+  },
+  timestampTop: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  timestampBottom: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  timestampText: {
+    color: '#fff',
+    fontSize: 10,
+  },
+  infoContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 4,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  meta: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+});
+
+export default VideoCard;

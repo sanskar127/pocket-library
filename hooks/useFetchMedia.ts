@@ -9,12 +9,25 @@ import { Dimensions } from 'react-native'
 const useFetchMedia = () => {
     const [getMedia, { isLoading, isError }] = useGetMediaMutation()
     const dispatch = useDispatch()
+
     const routeHistory = useSelector((state: RootState) => state.localRouter.history)
     const data = useSelector((state: RootState) => state.response.data)
+    const hasMore = useSelector((state: RootState) => state.response.hasMore)
+
     const pathname = useMemo(() => routeHistory.join('/'), [routeHistory])
+
     const [offset, setOffset] = useState<number>(0)
     const [deviceWidth, setDeviceWidth] = useState(Dimensions.get('window').width)
-    const { initialLimit, limit } = getLimit(deviceWidth)
+
+    // Memoized limits based on screen width
+    const { initialLimit, limit } = useMemo(() => getLimit(deviceWidth), [deviceWidth])
+
+    // Updates the offset to fetch more data
+    const updateOffset = () => {
+        if (hasMore) {
+            setOffset(prev => prev + (prev === 0 ? initialLimit : limit))
+        }
+    }
 
     // Handle screen dimension changes
     useEffect(() => {
@@ -29,7 +42,7 @@ const useFetchMedia = () => {
         }
     }, [])
 
-    // Fetch media data
+    // Fetch media data when pathname, offset, or limits change
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -39,10 +52,11 @@ const useFetchMedia = () => {
                     limit: offset === 0 ? initialLimit : limit,
                 }).unwrap()
 
+                if (offset === 0) {
+                    dispatch(resetData())
+                }
+
                 if (response) {
-                    if (offset === 0) {
-                        dispatch(resetData())
-                    }
                     dispatch(setData(response))
                 }
             } catch (e) {
@@ -53,7 +67,13 @@ const useFetchMedia = () => {
         fetchData()
     }, [pathname, offset, initialLimit, limit, dispatch, getMedia])
 
-    return { data, isLoading, isError, setOffset }
+    return {
+        data,
+        isLoading,
+        isError,
+        updateOffset,
+        hasMore,
+    }
 }
 
 export default useFetchMedia

@@ -4,10 +4,10 @@ import Video from '@/components/common/Video';
 import useFetchMedia from '@/hooks/useFetchMedia';
 import useLocalRouter from '@/hooks/useLocalRouter';
 import { DirectoryInterface, ImageInterface, VideoInterface } from '@/types/types';
-import { ScrollView, Text, View, SafeAreaView, ActivityIndicator } from 'react-native';
+import { ScrollView, Text, View, SafeAreaView, ActivityIndicator, Button } from 'react-native';
 
 export default function Dashboard() {
-  const { data, isLoading } = useFetchMedia();
+  const { data, isLoading, hasMore, updateOffset } = useFetchMedia();
   useLocalRouter()
 
   if (isLoading) {
@@ -36,15 +36,13 @@ export default function Dashboard() {
               return <Video key={item.id} details={item as VideoInterface} />;
             }
           })}
+          {hasMore && <Button title='more' onPress={(e) => {
+            e.preventDefault()
+            updateOffset()
+          }
+          } />}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-
-// {/* <Text className='text-white font-bold text-xl'>Complete Path: {pathname} </Text>
-//         <Text className='text-white font-bold text-xl'>Current Path: {currentPath} </Text>
-//         <TextInput value={input} onChangeText={setInput} className='bg-white/10 text-white border border-white/20 rounded-sm text-lg px-4 py-2 outline-none' placeholder='Input Path' />
-//         <LocalLink to={input} className='bg-blue-400 text-lg px-4 py-2 font-bold text-white'>Add Path</LocalLink>
-//         <Button title='Go Back' onPress={() => back()} /> */}

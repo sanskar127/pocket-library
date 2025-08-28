@@ -13,6 +13,8 @@ const useLocalRouter = (): [string, string, (path: string) => void, () => void] 
   const currentPath = routeHistory.length ? routeHistory[routeHistory.length - 1] : '/'
   const pathname = useMemo(() => routeHistory.join('/'), [routeHistory])
 
+  console.log(routeHistory)
+
   useEffect(() => {
     const backAction = () => {
       if ((nativePathname === '/dashboard') && routeHistory.length === 0) BackHandler.exitApp()
