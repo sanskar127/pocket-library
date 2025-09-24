@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { setBaseURL } from '@/features/responseSlice';
 import Divider from '@/components/ui/Divider';
 import { useHistoryStorage } from '@/hooks/useHistoryStorage';
+import { StatusBar } from 'expo-status-bar';
 
 export default function Welcome() {
   const [url, setUrl] = useState('');
@@ -49,6 +50,7 @@ export default function Welcome() {
       className="flex-1 bg-background"
     >
       <View className="flex-1 justify-center items-center px-6">
+      <StatusBar translucent animated />
         <View className="w-full max-w-md">
           <Text className="text-white text-5xl font-extrabold text-center mb-10">
             Welcome
