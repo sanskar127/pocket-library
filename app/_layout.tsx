@@ -21,6 +21,7 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen name="dashboard" options={{ header: () => <Header title="Dashboard" /> }} />
+        <Stack.Screen name='watch/[id]' options={{ headerShown: false }} />
       </Stack>
     </Provider>
   );
