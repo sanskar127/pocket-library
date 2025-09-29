@@ -1,16 +1,23 @@
 import { ItemType } from "@/types/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
+interface statusInterface {
+    isError: boolean
+    isLoading: boolean
+}
+
 interface stateInterface {
     baseURL: string
-    data: ItemType[],
+    data: ItemType[]
+    status: statusInterface
     hasMore: boolean
 }
 
 const initialState: stateInterface = {
     baseURL: "",
     data: [],
-    hasMore: false
+    status: { isLoading: true, isError: false },
+    hasMore: false,
 }
 
 export const responseSlice = createSlice({
@@ -27,12 +34,16 @@ export const responseSlice = createSlice({
         setHasMore: (state, action: PayloadAction<boolean>) => {
             state.hasMore = action.payload
         },
+        setStatus: (state, action: PayloadAction<statusInterface>) => {
+            state.status = action.payload
+        },
         resetData: (state) => {
             state.data = []
             state.hasMore = false
+            state.status = { isLoading: false, isError: false }
         }
     }
 })
 
-export const { setBaseURL, setData, setHasMore, resetData } = responseSlice.actions
+export const { setBaseURL, setData, setHasMore, resetData, setStatus } = responseSlice.actions
 export default responseSlice.reducer

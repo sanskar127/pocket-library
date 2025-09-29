@@ -2,16 +2,15 @@ import { useGetMediaMutation } from '@/api/mediaApi'
 import { RootState } from '@/store/store'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { setData, resetData } from "@/features/responseSlice"
+import { setData, resetData, setStatus } from "@/features/responseSlice"
 import { getLimit } from '@/utils/utils'
 import { Dimensions } from 'react-native'
 
 const useFetchMedia = () => {
-    const [getMedia, { isLoading, isError }] = useGetMediaMutation()
+    const [getMedia] = useGetMediaMutation()
     const dispatch = useDispatch()
 
     const routeHistory = useSelector((state: RootState) => state.localRouter.history)
-    const data = useSelector((state: RootState) => state.response.data)
     const hasMore = useSelector((state: RootState) => state.response.hasMore)
 
     const pathname = useMemo(() => routeHistory.join('/'), [routeHistory])
@@ -19,20 +18,17 @@ const useFetchMedia = () => {
     const [offset, setOffset] = useState<number>(0)
     const [deviceWidth, setDeviceWidth] = useState(Dimensions.get('window').width)
 
-    // Stable screen width and limits
     const { initialLimit, limit } = useMemo(() => getLimit(deviceWidth), [deviceWidth])
 
-    // Track if it's the initial load
     const isInitialLoad = useRef(true)
 
-    // Updates the offset to fetch more data (pagination)
     const updateOffset = () => {
         if (hasMore) {
             setOffset(prev => prev + (prev === 0 ? initialLimit : limit))
         }
     }
 
-    // Handle screen dimension changes with a small threshold to avoid noise
+    // Handle screen dimension changes
     useEffect(() => {
         const handleDimensionChange = ({ window }: { window: any }) => {
             const newWidth = window.width
@@ -47,7 +43,7 @@ const useFetchMedia = () => {
         }
     }, [deviceWidth])
 
-    // Reset offset and data on pathname change
+    // Reset data on pathname change
     useEffect(() => {
         isInitialLoad.current = true
         dispatch(resetData())
@@ -57,6 +53,7 @@ const useFetchMedia = () => {
     // Fetch media data
     useEffect(() => {
         const fetchData = async () => {
+            dispatch(setStatus({ isLoading: true, isError: false }))
             try {
                 const currentLimit = offset === 0 ? initialLimit : limit
 
@@ -67,26 +64,27 @@ const useFetchMedia = () => {
                 }).unwrap()
 
                 if (response) {
-                    dispatch(setData(response))
+                    dispatch(setData({ media: response.media, hasMore: response.hasMore }))
                 }
 
-                // Mark initial load complete
-                if (isInitialLoad.current) {
-                    isInitialLoad.current = false
-                }
+                dispatch(setStatus({ isLoading: false, isError: false }))
+                isInitialLoad.current = false
+
             } catch (e) {
                 console.error('Failed to fetch media:', e)
+                dispatch(setStatus({ isLoading: false, isError: true }))
             }
         }
 
-        // Only fetch if limits are valid
         if (limit && initialLimit) {
             fetchData()
         }
-    }, [pathname, offset, limit, initialLimit, getMedia, dispatch])
+
+    }, [pathname, offset, initialLimit, limit, getMedia, dispatch])
+
+    const { isLoading, isError } = useSelector((state: RootState) => state.response.status)
 
     return {
-        data,
         isLoading,
         isError,
         updateOffset,

@@ -1,12 +1,12 @@
-
-
 export interface VideoInterface {
   id: string;
   name: string;
   size: number;
   duration: number;
+  width: number;
+  height: number;
   modifiedAt: Date;
-  type: VideoExtension;
+  type: string;
   url: string;
   thumbnail: string;
 }
@@ -16,7 +16,7 @@ export interface ImageInterface {
   name: string;
   size: number;
   modifiedAt: Date;
-  type: ImageExtension;
+  type: string;
   url: string;
 }
 
@@ -56,8 +56,8 @@ export type ImageExtension =
   | ".svg";
 
 export interface DeviceInterface {
-  (): { 
-    device: DeviceType 
+  (): {
+    device: DeviceType
     limit: number
   }
 }
@@ -86,3 +86,12 @@ export interface UseFetchMediaResult {
 // export interface UseFetchMediaInterface {
 //   (): UseInfiniteQueryResult<ResponseInterface, Error>
 // }
+
+export interface RenderItemInterface {
+  (items: Record<string, any>): React.JSX.Element | null
+}
+
+export interface ItemListingPropsInterface {
+  data: ItemType[]
+  renderItem: RenderItemInterface
+}
