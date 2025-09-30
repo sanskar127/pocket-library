@@ -1,5 +1,5 @@
 import { cacheDir, videosDir, entries, isOffsetReset, chunkedData, setChunkedData, setEntries, playbackDir } from './states';
-import { ChunkInterface, GetInitialLength, ScanVideosInterface, VideoExtension, ImageExtension, ScanImagesInterface } from './types';
+import { ChunkInterface, GetInitialLength, ScanVideosInterface, VideoExtension, ImageExtension, ScanImagesInterface, VideoMetadata } from './types';
 import { stat, readdir, mkdir } from 'fs/promises';
 import qrcode from 'qrcode-terminal';
 import ffmpeg from 'fluent-ffmpeg';
@@ -52,12 +52,22 @@ export const generateShortId = (input: string): string => {
     .slice(0, 8);
 };
 
-// Get video duration in seconds
-export const getDuration = (videoFullPath: string): Promise<number> => {
+// Get video width, height and duration in seconds
+export const getVideoMetadata = (videoFullPath: string): Promise<VideoMetadata> => {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(videoFullPath, (err, metadata) => {
       if (err) return reject(err);
-      resolve(typeof metadata.format.duration === 'number' ? metadata.format.duration : 0);
+
+      const videoStream = metadata.streams.find(s => s.codec_type === 'video');
+      if (!videoStream || typeof metadata.format.duration !== 'number') {
+        return reject(new Error('Video stream or duration not found'));
+      }
+
+      const width = videoStream.width || 0;
+      const height = videoStream.height || 0;
+      const duration = metadata.format.duration;
+
+      resolve({ duration, width, height });
     });
   });
 };
@@ -288,18 +298,20 @@ export const transcodingHLS = async (videoFile: string, outputDir: string): Prom
 // Retrieve video details and create a response object for a video file
 export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
   try {
-    const stats = await stat(filepath);
-    const duration = await getDuration(filepath);
+    const {mtimeMs, size, mtime} = await stat(filepath);
+    const {width, height, duration} = await getVideoMetadata(filepath);
     const thumbnail = await getThumbnail(filepath, duration);
     const relativeFilePath = path.relative(videosDir, filepath).replace(/\\/g, '/');
 
     return {
-      id: generateShortId(relativeFilePath + stats.mtimeMs),
+      id: generateShortId(relativeFilePath + mtimeMs),
       name: path.basename(filepath, extension),
-      size: stats.size,
-      modifiedAt: stats.mtime,
+      size,
+      modifiedAt: mtime,
       type: videoFormats[extension],
       duration,
+      width,
+      height,
       url: `/videos/${relativeFilePath}`,
       thumbnail
     };

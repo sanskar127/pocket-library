@@ -1,10 +1,8 @@
-import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, getChunk, validateLimit, setMediaFiles, videoFormats, imageFormats, scanImages, convertToMP4, transcodingHLS } from './utils';
+import { scanVideos, generateQrCode, generateShortId, getLocalIPAddress, getChunk, validateLimit, setMediaFiles, videoFormats, imageFormats, scanImages, transcodingHLS } from './utils';
 import { DirectoryInterface, ImageExtension, requestBodyInterface, responseType, VideoExtension } from './types';
 import { videosDir, cacheDir, isOffsetReset, setIsOffsetReset, playbackDir } from './states';
 import express, { Express, Request, Response } from 'express';
 import { existsSync, mkdirSync, readdirSync } from 'fs';
-// import ffmpegPath from 'ffmpeg-static';
-// import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs/promises';
 import cors from 'cors';
 import path from 'path';
@@ -16,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
-app.post('/api/videos', async (request: Request, response: Response) => {
+app.post('/api/media', async (request: Request, response: Response) => {
     const media: responseType[] = [];
     const { pathname, limit, offset = 0 }: requestBodyInterface = request.body;
 
@@ -114,7 +112,6 @@ app.post('/api/playback', async (request: Request, response: Response) => {
         response.status(500).send('Error preparing playback.');
     }
 });
-
 
 app.get('/owner', (_, response: Response) => response.json({
     message: "Backend service for 'Pocket Media Library,' originally created and maintained by Sanskar (a.k.a. 5agmi), since July 2025."

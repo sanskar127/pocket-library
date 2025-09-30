@@ -3,6 +3,8 @@ export interface VideoInterface {
   name: string;
   size: number;
   duration: number;
+  width: number;
+  height: number;
   modifiedAt: Date;
   type: string;
   url: string;
@@ -86,4 +88,10 @@ export interface TranscodeResult {
 
 export interface GetInitialLength {
   (device: DeviceType): { initialLimit: number, limit: number }
+}
+
+export interface VideoMetadata {
+  duration: number;
+  width: number;
+  height: number;
 }
