@@ -2,12 +2,12 @@ import { useGetMediaMutation } from '@/api/mediaApi'
 import { RootState } from '@/store/store'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { setData, resetData, setStatus } from "@/features/responseSlice"
+import { setData, resetData } from "@/features/responseSlice"
 import { getLimit } from '@/utils/utils'
 import { Dimensions } from 'react-native'
 
 const useFetchMedia = () => {
-    const [getMedia] = useGetMediaMutation()
+    const [getMedia, { isLoading, isError }] = useGetMediaMutation()
     const dispatch = useDispatch()
 
     const routeHistory = useSelector((state: RootState) => state.localRouter.history)
@@ -53,7 +53,6 @@ const useFetchMedia = () => {
     // Fetch media data
     useEffect(() => {
         const fetchData = async () => {
-            dispatch(setStatus({ isLoading: true, isError: false }))
             try {
                 const currentLimit = offset === 0 ? initialLimit : limit
 
@@ -67,12 +66,10 @@ const useFetchMedia = () => {
                     dispatch(setData({ media: response.media, hasMore: response.hasMore }))
                 }
 
-                dispatch(setStatus({ isLoading: false, isError: false }))
                 isInitialLoad.current = false
 
             } catch (e) {
                 console.error('Failed to fetch media:', e)
-                dispatch(setStatus({ isLoading: false, isError: true }))
             }
         }
 
@@ -81,8 +78,6 @@ const useFetchMedia = () => {
         }
 
     }, [pathname, offset, initialLimit, limit, getMedia, dispatch])
-
-    const { isLoading, isError } = useSelector((state: RootState) => state.response.status)
 
     return {
         isLoading,
