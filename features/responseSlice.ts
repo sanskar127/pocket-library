@@ -1,16 +1,14 @@
-import { ItemType } from "@/types/types"
+import { ItemType, thumbnailBodyInterface } from "@/types/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 
 interface stateInterface {
     baseURL: string
     data: ItemType[]
-    hasMore: boolean
 }
 
 const initialState: stateInterface = {
     baseURL: "",
     data: [],
-    hasMore: false,
 }
 
 export const responseSlice = createSlice({
@@ -20,19 +18,17 @@ export const responseSlice = createSlice({
         setBaseURL: (state, action: PayloadAction<string>) => {
             state.baseURL = action.payload
         },
-        setData: (state, action: PayloadAction<{ media: ItemType[], hasMore: boolean }>) => {
-            state.data = [...state.data, ...action.payload.media]
-            state.hasMore = action.payload.hasMore
+        setData: (state, action: PayloadAction<ItemType[]>) => {
+            state.data = [...state.data, ...action.payload]
         },
-        setHasMore: (state, action: PayloadAction<boolean>) => {
-            state.hasMore = action.payload
+        setThumbnails: (state, action: PayloadAction<thumbnailBodyInterface[]>) => {
+            
         },
         resetData: (state) => {
             state.data = []
-            state.hasMore = false
         }
     }
 })
 
-export const { setBaseURL, setData, setHasMore, resetData } = responseSlice.actions
+export const { setBaseURL, setData, resetData } = responseSlice.actions
 export default responseSlice.reducer

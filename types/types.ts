@@ -8,7 +8,7 @@ export interface VideoInterface {
   modifiedAt: Date;
   type: string;
   url: string;
-  thumbnail: string;
+  thumbnail?: string;
 }
 
 export interface ImageInterface {
@@ -26,6 +26,13 @@ export interface DirectoryInterface {
   type: 'directory';
   modifiedAt: Date;
   url: string;
+}
+
+export interface thumbnailBodyInterface {
+    media: {
+        url: string
+        duration: number
+    }
 }
 
 export type ItemType = VideoInterface | DirectoryInterface | ImageInterface

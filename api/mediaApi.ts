@@ -1,18 +1,26 @@
 import { createApi } from "@reduxjs/toolkit/query/react"
 import { getBaseQuery as baseQuery } from "@/features/getBaseQuery"
+import { thumbnailBodyInterface } from "@/types/types"
 
 export const mediaApi = createApi({
     reducerPath: 'media-api',
     baseQuery,
-    endpoints: ({ mutation }) => ({
-        getMedia: mutation({
-            query: ({ pathname, offset, limit }: { pathname: string, offset: number, limit: number }) => ({
+    endpoints: (builder) => ({
+        getMedia: builder.mutation({
+            query: (pathname: string) => ({
                 url: '/media',
                 method: 'POST',
-                body: { pathname, offset, limit }
+                body: { pathname }
+            })
+        }),
+        getThumbnails: builder.mutation({
+            query: (media: thumbnailBodyInterface[]) => ({
+                url: '/thumbnail',
+                method: 'POST',
+                body: { media }
             })
         })
     })
 })
 
-export const { useGetMediaMutation } = mediaApi
+export const { useGetMediaMutation, useGetThumbnailsMutation } = mediaApi

@@ -1,5 +1,5 @@
 import { RootState } from '@/store/store';
-import { ItemType, RenderItemInterface, VideoInterface } from '@/types/types';
+import { RenderItemInterface, VideoInterface } from '@/types/types';
 // import { useEvent } from 'expo';
 import Video from '@/components/common/Video';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -19,8 +19,6 @@ export default function WatchScreen() {
   const entries = useSelector((state: RootState) => state.response.data)
   const baseURL = useSelector((state: RootState) => state.response.baseURL)
 
-  // const entry: VideoInterface = entries.find(item => item.id === id) as ItemType as VideoInterface
-
   useEffect(() => {
     setIsLoading(true);
 
@@ -34,9 +32,7 @@ export default function WatchScreen() {
     setIsLoading(false);
   }, [entries, id]);
 
-  const url = baseURL + entry?.url
-
-  const player = useVideoPlayer(url, player => {
+  const player = useVideoPlayer((baseURL + entry?.url), player => {
     player.loop = true;
     player.play();
   });

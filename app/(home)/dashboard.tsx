@@ -10,18 +10,9 @@ export default function Dashboard() {
   const data = useSelector((state: RootState) => state.response.data)
 
   const renderItem: RenderItemInterface = ({ item }) => {
-    if (item.type === 'directory') {
-      return <Directory details={item as DirectoryInterface} />;
-    }
-
-    if (item.type.startsWith('image/')) {
-      return <Image details={item as ImageInterface} />;
-    }
-
-    if (item.type.startsWith('video/')) {
-      return <Video details={item as VideoInterface} />;
-    }
-
+    if (item.type === 'directory') return <Directory details={item as DirectoryInterface} />
+    if (item.type.startsWith('image/')) return <Image details={item as ImageInterface} />
+    if (item.type.startsWith('video/')) return <Video details={item as VideoInterface} />
     return null;
   };
 

@@ -32,8 +32,10 @@ const VideoCard: FC<{ details: VideoInterface }> = ({ details }) => {
             style={styles.thumbnail}
           />
         ) : (
-          <View style={styles.placeholder}>
-            <Ionicons name="videocam" size={64} color="#007bff" style={styles.icon} />
+          <View
+            className="w-full aspect-[16/9] items-center justify-center bg-primary"
+          >
+            <Ionicons name="videocam" size={96} color="currentColor" />
           </View>
         )}
 

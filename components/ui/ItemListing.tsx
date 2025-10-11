@@ -1,42 +1,39 @@
-import { FlatList, Text, View, ActivityIndicator } from 'react-native';
-import useFetchMedia from '@/hooks/useFetchMedia';
-import { FC } from 'react';
-import { ItemListingPropsInterface } from '@/types/types';
+import { FlatList, View, ActivityIndicator } from 'react-native';
+import { FC, useState } from 'react';
+import { ItemListingPropsInterface, ItemType } from '@/types/types';
+const items_max = 7
 
 const ItemListing: FC<ItemListingPropsInterface> = ({ data, renderItem }) => {
-  const { isLoading, hasMore, updateOffset } = useFetchMedia();
-
-    if (isLoading && data.length === 0) {
-        return (
-            <View className="flex-1 justify-center items-center bg-background">
-                <ActivityIndicator size="large" color="#fff" />
-                <Text className="text-white mt-4">Loading...</Text>
-            </View>
-        );
-    }
+    const [displayedItems, setDisplayedItems] = useState<ItemType[]>([])
+    const [page, setPage] = useState<number>(1)
+    const [isLoading, setIsLoading] = useState<boolean>(true)
 
     const keyExtractor = (item: any) => item.id;
 
     const handleEndReached = () => {
-        if (hasMore) {
-            updateOffset();
+        setIsLoading(true)
+        if (data && page * items_max < data.length) {
+            const newItems = data.slice(0, (page + 1) * items_max);
+            setDisplayedItems(newItems);
+            setPage(page + 1); // Update the page for next load
+            setIsLoading(false)
         }
     };
 
     return (
         <FlatList
-            data={data}
+            data={displayedItems}
             keyExtractor={keyExtractor}
             renderItem={renderItem}
             onEndReached={handleEndReached}
             onEndReachedThreshold={0.2}
             contentContainerStyle={{
                 padding: 16,
-                backgroundColor: '#1e1e1e', // or use className if you're using Tailwind plugin for RN
+                backgroundColor: '#1e1e1e',
                 rowGap: 16,
             }}
             ListFooterComponent={
-                hasMore ? (
+                isLoading ? (
                     <View className="py-4">
                         <ActivityIndicator size="small" color="#fff" />
                     </View>
