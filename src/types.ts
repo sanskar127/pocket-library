@@ -8,7 +8,7 @@ export interface VideoInterface {
   modifiedAt: Date;
   type: string;
   url: string;
-  thumbnail: string;
+  thumbnail?: string;
 }
 
 export interface ImageInterface {
@@ -18,15 +18,22 @@ export interface ImageInterface {
   modifiedAt: Date;
   type: string;
   url: string;
-  thumbnail: string;
+  thumbnail?: string;
 }
 
 export interface DirectoryInterface {
   id: string;
   name: string;
-  type: string;
+  type: 'directory';
   modifiedAt: Date;
   url: string;
+}
+
+export interface thumbnailBodyInterface {
+    media: [{
+        url: string
+        duration: number
+    }]
 }
 
 export interface ScanVideosInterface {
@@ -43,8 +50,6 @@ type DeviceType = "mobile" | "tablet" | "laptop" | "desktop"
 
 export interface requestBodyInterface {
   pathname: string;
-  limit: number;
-  offset: number;
 }
 
 export type VideoExtension =
