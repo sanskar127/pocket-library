@@ -8,7 +8,7 @@ export interface VideoInterface {
   modifiedAt: Date;
   type: string;
   url: string;
-  thumbnail?: string;
+  thumbnail: string;
 }
 
 export interface ImageInterface {
@@ -18,7 +18,7 @@ export interface ImageInterface {
   modifiedAt: Date;
   type: string;
   url: string;
-  thumbnail?: string;
+  thumbnail: string;
 }
 
 export interface DirectoryInterface {
@@ -29,12 +29,7 @@ export interface DirectoryInterface {
   url: string;
 }
 
-export interface thumbnailBodyInterface {
-    media: [{
-        url: string
-        duration: number
-    }]
-}
+export type ItemType = VideoInterface | DirectoryInterface | ImageInterface
 
 export interface ScanVideosInterface {
   (filepath: string, extension: VideoExtension): Promise<VideoInterface | null>
@@ -44,12 +39,12 @@ export interface ScanImagesInterface {
   (filepath: string, extension: ImageExtension): Promise<ImageInterface | null>
 }
 
-export type responseType = VideoInterface | DirectoryInterface
-
 type DeviceType = "mobile" | "tablet" | "laptop" | "desktop"
 
 export interface requestBodyInterface {
   pathname: string;
+  offset: number;
+  limit: number
 }
 
 export type VideoExtension =
@@ -77,14 +72,14 @@ export type ImageExtension =
 
 export interface ChunkInterface {
   (
+    pathname: string,
     limit: number,
     offset: number
-  ): {
-    chunk: string[]
-    hasMore: boolean
-  }
+  ): Promise<{
+    data: ItemType[];
+    hasMore: boolean;
+  }>;
 }
-
 
 export interface TranscodeResult {
   promise: Promise<string>;
@@ -99,4 +94,8 @@ export interface VideoMetadata {
   duration: number;
   width: number;
   height: number;
+}
+
+export interface mediaInterface {
+  [key: string]: ItemType[]
 }

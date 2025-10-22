@@ -1,8 +1,11 @@
 import crypto from 'crypto';
 import Ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs'
+import { mkdir, writeFile } from 'fs/promises'
 import qrcode from 'qrcode-terminal';
 import os from 'os'
+import { cachingFile, media } from './states';
+import path from 'path';
 
 // Sanitize file names for Windows (and general safety)
 export const sanitizeFileName = (name: string): string => {
@@ -77,4 +80,24 @@ export const generateQrCode = (data: string): Promise<string> => {
       }
     });
   });
+};
+
+export const writeJsonFileAsync = (): Promise<void> => {
+  const dir = path.dirname(cachingFile);
+
+  return mkdir(dir, { recursive: true }) // Ensure the directory exists
+    .then(() => {
+      // Convert media object to JSON string
+      const jsonString = JSON.stringify(media, null, 2);
+
+      // Write the JSON to the file
+      return writeFile(cachingFile, jsonString);
+    })
+    .then(() => {
+      console.log('File written successfully to:', cachingFile);
+    })
+    .catch((error) => {
+      console.error('Error writing JSON file:', error);
+      throw error; // Rethrow the error to maintain the rejected promise
+    });
 };

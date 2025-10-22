@@ -1,96 +1,122 @@
+import { getChunk, mediaChecker, scanImages, scanVideos, transcodingHLS, validateLimit } from "../features/mediaFeatures";
+import { mediaDir, playbackDir, videoFormats, imageFormats, media, setMedia, cachingFile } from '../states';
+import { DirectoryInterface, ImageExtension, requestBodyInterface, ItemType, VideoExtension, mediaInterface } from "../types";
 import { Request, Response } from "express";
-import path from 'path';
-import { existsSync, readdirSync } from 'fs';
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import { generateShortId, writeJsonFileAsync } from "../utils";
 import fs from 'fs/promises'
-
-import { DirectoryInterface, ImageExtension, requestBodyInterface, thumbnailBodyInterface, VideoExtension } from "../types";
-import { generateShortId } from "../utils";
-import { imageFormats, videoFormats, videosDir } from "../constants";
-import { getThumbnail, mediaChecker, scanImages, scanVideos } from "../features/mediaFeatures";
+import path from 'path';
 
 export const mediaController = async (request: Request, response: Response) => {
-    const { pathname }: requestBodyInterface = request.body
-    const decodedDir = decodeURIComponent(pathname);
+    const { pathname, limit, offset = 0 }: requestBodyInterface = request.body;
+    if (!validateLimit(limit)) return response.status(400).json({ error: 'Invalid limit' });
+    const isCacheExists = existsSync(cachingFile)
 
-    const navigationPath = decodedDir ? path.join(videosDir, decodedDir) : videosDir;
+    const decodedDir = decodeURIComponent(pathname);    // Transforming Encoded URI to string with spaces
+    const navigationPath = decodedDir ? path.join(mediaDir, decodedDir) : mediaDir;
+
     const safePath = path.normalize(navigationPath);
-
-    if (!safePath.startsWith(path.normalize(videosDir))) return response.status(403).json({ error: 'Forbidden directory access' });
+    if (!safePath.startsWith(path.normalize(mediaDir))) return response.status(403).json({ error: 'Forbidden directory access' });
     if (!existsSync(safePath)) return response.status(404).json({ error: "Directory not found" });
 
-    const entries = (await Promise.all(
-        readdirSync(navigationPath).map(async item => {
-            const isValid = await mediaChecker(item);
-            return isValid ? item : null;
-        })
-    )).filter(item => item !== null);
-
-    const data = await Promise.all(entries.map(async (item) => {
-        const currentPath = path.join(navigationPath, item);
-        const stats = await fs.stat(currentPath);
-
-        // If directory
-        if (stats.isDirectory()) {
-            const name = path.basename(currentPath);
-            return {
-                id: generateShortId(path.relative(videosDir, navigationPath) + stats.mtimeMs),
-                name,
-                type: 'directory',
-                modifiedAt: stats.mtime,
-                url: name,
-            } as DirectoryInterface;
+    try {
+        if (isCacheExists) {
+            const data = readFileSync(cachingFile, 'utf8');
+            const jsonData: mediaInterface = JSON.parse(data);
+            setMedia(jsonData);
         }
 
-        const extname = path.extname(item).toLowerCase();
+        if (!(pathname in media)) {
+            const items = await fs.readdir(navigationPath);
+            const entries = await Promise.all(items.map(async item => {
+                try {
+                    const filePath = path.join(navigationPath, item);
+                    if (!await mediaChecker(filePath)) {
+                        return null;  // Skip non-media files
+                    }
 
-        // If video
-        if (videoFormats.hasOwnProperty(extname)) {
-            try {
-                return await scanVideos(currentPath, extname as VideoExtension);
-            } catch (videoError) {
-                console.error(`Error scanning video at ${currentPath}:`, videoError);
-            }
+                    const currentPath = path.join(navigationPath, item);
+                    const stats = await fs.stat(currentPath);
+
+                    if (stats.isDirectory()) {
+                        const name = path.basename(currentPath);
+                        return {
+                            id: generateShortId(path.relative(mediaDir, navigationPath) + stats.mtimeMs),
+                            name,
+                            type: 'directory',
+                            modifiedAt: stats.mtime,
+                            url: name,
+                        } as DirectoryInterface;
+                    }
+
+                    const extname = path.extname(item).toLowerCase() as VideoExtension;
+
+                    if (videoFormats.hasOwnProperty(extname)) {
+                        try {
+                            return await scanVideos(currentPath, extname);
+                        } catch (videoError) {
+                            console.error(`Error scanning video at ${currentPath}:`, videoError);
+                            return { error: "Failed to process video" }; // Fallback return
+                        }
+                    }
+
+                    if (imageFormats.hasOwnProperty(extname)) {
+                        try {
+                            return await scanImages(currentPath, extname as ImageExtension);
+                        } catch (imageError) {
+                            console.error(`Error scanning image at ${currentPath}:`, imageError);
+                            return { error: "Failed to process image" }; // Fallback return
+                        }
+                    }
+
+                    return null;  // No match for video or image formats
+                } catch (error) {
+                    console.error(`Error processing file ${item}:`, error);
+                    return { error: "Failed to process file" }; // Fallback return
+                }
+            })).then(entries => entries.filter(item => item !== null)) as ItemType[];
+
+            setMedia({ [pathname]: entries })
+
+            // Caching entries 
+            writeJsonFileAsync().catch(error => {
+                console.error('Error writing to the file:', error);
+            });
         }
 
-        // If image
-        if (imageFormats.hasOwnProperty(extname)) {
-            try {
-                return await scanImages(currentPath, extname as ImageExtension);
-            } catch (videoError) {
-                console.error(`Error scanning video at ${currentPath}:`, videoError);
-            }
-        }
-    }));
-
-    response.status(200).json({ data })
+        const { data, hasMore } = await getChunk(pathname, limit, offset);
+        response.status(200).json({ data, hasMore });
+    } catch (error) {
+        console.error(`Error scanning directory ${navigationPath}:`, error);
+        response.status(500).json({ error: 'Internal Server Error' });
+    }
 }
 
-export const thumbnailController = async (request: Request, response: Response) => {
-    const { media }: thumbnailBodyInterface = request.body;
+export const streamingController = async (request: Request, response: Response) => {
+    const { video }: { video: string } = request.body;
 
-    // Process all the media in parallel
     try {
-        const data: { name: string, thumbnail: string | null }[] = await Promise.all(
-            media.map(async ({ url, duration }) => {
-                const filepath = path.resolve(videosDir, url.replace('/videos/', ''));
-                const name = path.basename(filepath, path.extname(filepath));
-                try {
-                    const thumbnail = await getThumbnail(filepath, duration);  // Get or generate thumbnail
-                    return { name, thumbnail };
-                } catch (error) {
-                    console.error(`❌ Failed to generate thumbnail for ${url}:`, error);
-                    return { name, thumbnail: null };  // Return null for failed thumbnail
-                }
-            })
-        );
+        const safeName = path.basename(video, path.extname(video));
+        const videoPath = path.join(mediaDir, video);
+        const playbackPath = path.join(playbackDir, safeName);
+        const playlistPath = path.join(playbackPath, 'playlist.m3u8');
+        const doneFile = path.join(playbackPath, '.done');
+        const lockFile = path.join(playbackPath, '.lock');
 
-        response.status(200).json({ data });
-    } catch (error) {
-        console.error('❌ Error in thumbnailController:', error);
-        response.status(500).json({ error: 'Failed to generate thumbnails' });
+        // Incomplete state if no .done or missing playlist
+        const isIncomplete =
+            !existsSync(doneFile) ||
+            !existsSync(playlistPath) ||
+            readdirSync(playbackPath).filter(f => f.endsWith('.ts')).length === 0;
+
+        if (isIncomplete && !existsSync(lockFile)) {
+            console.log('🔁 Resuming or starting transcoding...');
+            await transcodingHLS(videoPath, playbackPath);
+        }
+
+        response.sendFile('playlist.m3u8', { root: playbackPath });
+    } catch (err) {
+        console.error('❌ Playback error:', err);
+        response.status(500).send('Error preparing playback.');
     }
-};
-
-export const streamingController = (request: Request, response: Response) => {
-
 }
