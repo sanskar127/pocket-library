@@ -3,64 +3,56 @@ import { RenderItemInterface, VideoInterface } from '@/types/types';
 // import { useEvent } from 'expo';
 import Video from '@/components/common/Video';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useLocalSearchParams } from 'expo-router';
-import { StyleSheet, View, Dimensions, Platform, Text, } from 'react-native';
+import { StyleSheet, View, Dimensions, Platform, Text, FlatList, ActivityIndicator, } from 'react-native';
 import { useSelector } from 'react-redux';
-import ItemListing from '@/components/ui/ItemListing';
-import { useEffect, useState } from 'react';
+import useFetchMedia from '@/hooks/useFetchMedia';
 
 const { width: deviceWidth } = Dimensions.get('window');
 
 export default function WatchScreen() {
-  const [entry, setEntry] = useState<VideoInterface | null>(null)
-  const [related, setRelated] = useState<VideoInterface[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const { id } = useLocalSearchParams();
-  const entries = useSelector((state: RootState) => state.response.data)
-  const baseURL = useSelector((state: RootState) => state.response.baseURL)
-
-  useEffect(() => {
-    setIsLoading(true);
-
-    const videoEntry = entries.find(item => item.id === id) as VideoInterface;
-    if (videoEntry) {
-      setEntry(videoEntry);
-      const relatedVideos = entries.filter(item => item.id !== videoEntry.id) as VideoInterface[];
-      setRelated(relatedVideos);
-    }
-
-    setIsLoading(false);
-  }, [entries, id]);
-
-  const player = useVideoPlayer((baseURL + entry?.url), player => {
-    player.loop = true;
-    player.play();
-  });
-
-  // If entry is not found, render a loading state
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
-
-  // const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
+  const selectedMedia = useSelector((state: RootState) => state.content.selectedMedia)
+  const baseURL = useSelector((state: RootState) => state.baseurl.baseURL)
+  const { data, isLoading, updateOffset, isError } = useFetchMedia();
 
   const renderItem: RenderItemInterface = ({ item }) => {
-    if (item.type.startsWith('video/')) {
-      return <Video details={item as VideoInterface} />;
-    }
+    if (item.type.startsWith('video/') && item.id !== selectedMedia?.id) return <Video details={item as VideoInterface} />
 
     return null;
   };
 
+  const player = useVideoPlayer((baseURL + selectedMedia?.url), player => {
+    player.loop = true;
+    player.play();
+  });
+
+  // const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
+
   return (
-    <View className='bg-background flex flex-1 w-full'>
+    <View className='flex flex-1 w-full'>
       <VideoView style={styles.video} player={player} allowsFullscreen allowsPictureInPicture />
       <View style={styles.controlsContainer}>
-        <ItemListing data={related} renderItem={renderItem} />
+        <FlatList
+          data={data}
+          keyExtractor={(item: any) => item.id}
+          renderItem={renderItem}
+          onEndReached={updateOffset}
+          onEndReachedThreshold={0.2}
+          contentContainerStyle={{
+            padding: 16,
+            rowGap: 16,
+          }}
+          ListFooterComponent={
+            isLoading ? (
+              <View className="py-4">
+                <ActivityIndicator size="small" color="#fff" />
+              </View>
+            ) : (isError ? (
+              <View className="flex-1 justify-center items-center">
+                <Text className="text-white mt-4">Error to Fetch Data</Text>
+              </View>
+            ) : null)
+          }
+        />
       </View>
     </View>
   );

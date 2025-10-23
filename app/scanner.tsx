@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import { useHistoryStorage } from '@/hooks/useHistoryStorage';
-import { setBaseURL } from '@/features/responseSlice';
+import { setBaseURL } from '@/features/baseQuery';
 
 export default function Scanner() {
   const [permission, requestPermission] = useCameraPermissions();

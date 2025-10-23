@@ -90,15 +90,6 @@ export interface UseFetchMediaResult {
   isError: boolean
 }
 
-// export interface UseFetchMediaInterface {
-//   (): UseInfiniteQueryResult<ResponseInterface, Error>
-// }
-
 export interface RenderItemInterface {
   (items: Record<string, any>): React.JSX.Element | null
-}
-
-export interface ItemListingPropsInterface {
-  data: ItemType[]
-  renderItem: RenderItemInterface
 }

@@ -1,13 +1,17 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { setupListeners } from '@reduxjs/toolkit/query'
 import { mediaApi } from "@/api/mediaApi"
-import responseReducer from "@/features/responseSlice"
+import baseUrlReducer from "@/features/baseQuery"
 import localRouterReducer from "@/features/localRouterSlice"
+import contentReducer from "@/features/contentSlice"
+import lockReducer from "@/features/lockSlice"
 
 export const store = configureStore({
   reducer: {
-    response: responseReducer,
+    baseurl: baseUrlReducer,
     localRouter: localRouterReducer,
+    content: contentReducer,
+    lock: lockReducer,
     [mediaApi.reducerPath]: mediaApi.reducer
   },
   middleware: getDefaultMiddleware => 

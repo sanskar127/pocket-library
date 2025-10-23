@@ -1,19 +1,10 @@
 import { RootState } from '@/store/store';
-import { ImageInterface } from '@/types/types';
-import { useLocalSearchParams } from 'expo-router';
 import { View, Text, Image } from 'react-native';
 import { useSelector } from 'react-redux';
 
 export default function ViewScreen() {
-  const { id } = useLocalSearchParams();
-
-  const data = useSelector((state: RootState) => state.response.data);
-  const baseUrl = useSelector((state: RootState) => state.response.baseURL);
-
-  // Handle id being string or string[]
-  const itemId = Array.isArray(id) ? id[0] : id;
-
-  const selectedItem = data.find((item) => item.id === itemId) as ImageInterface | undefined;
+  const baseUrl = useSelector((state: RootState) => state.baseurl.baseURL);
+  const selectedItem = useSelector((state: RootState) => state.content.selectedMedia)
 
   if (!selectedItem) {
     return (

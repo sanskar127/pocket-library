@@ -10,20 +10,27 @@ import {
 import type { FC } from 'react';
 import type { ImageInterface } from '@/types/types';
 import { formatSize, formatRelativeTime } from '@/utils/utils';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useRouter } from 'expo-router';
+import { setSelectedMedia } from '@/features/contentSlice';
 
 const screenWidth = Dimensions.get('window').width;
 
 const ImageCard: FC<{ details: ImageInterface }> = ({ details }) => {
   const { id, name, modifiedAt, size, type, url } = details;
-  const baseUrl = useSelector((state: RootState) => state.response.baseURL)
+  const baseUrl = useSelector((state: RootState) => state.baseurl.baseURL)
   const router = useRouter()
+  const dispatch = useDispatch()
+
+  const handlePress = () => {
+    dispatch(setSelectedMedia(details))
+    router.push(`/view/${id}`)
+  }
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.imageWrapper} onPress={() => router.push(`/view/${id}`)}>
+      <TouchableOpacity style={styles.imageWrapper} onPress={handlePress}>
         <Image
           source={{ uri: baseUrl + url }}
           resizeMode="contain"

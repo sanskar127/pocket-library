@@ -11,20 +11,27 @@ import type { FC } from 'react';
 import type { VideoInterface } from '@/types/types';
 import { formatTime, formatSize, formatRelativeTime } from '@/utils/utils';
 import { Ionicons } from '@expo/vector-icons';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useRouter } from 'expo-router';
+import { setSelectedMedia } from '@/features/contentSlice';
 
 const screenWidth = Dimensions.get('window').width;
 
 const VideoCard: FC<{ details: VideoInterface }> = ({ details }) => {
+  const dispatch = useDispatch()
   const { id, thumbnail, name, duration, modifiedAt, size, type } = details;
-  const baseUrl = useSelector((state: RootState) => state.response.baseURL)
+  const baseUrl = useSelector((state: RootState) => state.baseurl.baseURL)
   const router = useRouter()
+
+  const handlePress = () => {
+    dispatch(setSelectedMedia(details))
+    router.push(`/watch/${id}`)
+  }
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.videoWrapper} onPress={() => router.push(`/watch/${id}`)}>
+      <TouchableOpacity style={styles.videoWrapper} onPress={handlePress}>
         {thumbnail ? (
           <Image
             source={{ uri: baseUrl + thumbnail }}

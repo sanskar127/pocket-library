@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { setBaseURL } from '@/features/responseSlice';
+import { setBaseURL } from '@/features/baseQuery';
 import Divider from '@/components/ui/Divider';
 import { useHistoryStorage } from '@/hooks/useHistoryStorage';
 import { StatusBar } from 'expo-status-bar';
@@ -38,7 +38,7 @@ export default function Welcome() {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-background">
+      <View className="flex-1 justify-center items-center">
         <Text className="text-white">Loading history...</Text>
       </View>
     );
@@ -47,7 +47,7 @@ export default function Welcome() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-background"
+      className="flex-1"
     >
       <View className="flex-1 justify-center items-center px-6">
       <StatusBar translucent animated />
