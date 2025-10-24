@@ -1,8 +1,9 @@
-// build.js
 const esbuild = require('esbuild');
 const path = require('path');
 const fs = require('fs');
+const fsExtra = require('fs-extra'); // To copy the binary
 
+// Modify build step
 esbuild.build({
   entryPoints: ['./src/index.ts'],
   bundle: true,
@@ -19,6 +20,14 @@ esbuild.build({
   // Prepend the shebang line
   const shebang = '#!/usr/bin/env node\n';
   fs.writeFileSync(outputFilePath, shebang + content, 'utf8');
+
+  // Copy the ffmpeg binary from ffmpeg-static to the dist directory
+  const ffmpegBinaryPath = require('ffmpeg-static'); // This will give the path to the binary
+  const ffmpegDestinationPath = path.join(__dirname, 'dist', 'ffmpeg'); // Target path for binary
+
+  // Make sure the directory exists before copying
+  fsExtra.ensureDirSync(path.dirname(ffmpegDestinationPath));
+  fsExtra.copySync(ffmpegBinaryPath, ffmpegDestinationPath); // Copy the binary
 
   // Generate package.json
   const packageJsonPath = path.join(__dirname, 'dist', 'package.json');

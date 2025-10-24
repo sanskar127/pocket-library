@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import Ffmpeg from 'fluent-ffmpeg';
+import { exec } from 'child_process';
+import ffmpegPath from 'ffmpeg-static';
 import fs from 'fs'
 import qrcode from 'qrcode-terminal';
 import os from 'os'
@@ -35,21 +36,20 @@ export const generateShortId = (input: string): string => {
 // Generate thumbnail using ffmpeg
 export const generateThumbnail = (videoPath: string, outputPath: string, duration: number): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const seekTime = Math.floor(duration / 2);
+    const seekTime = Math.floor(duration / 2);  // Set the seek time (middle of the video)
+    const outputFilePath = path.resolve(outputPath);  // Ensure the output path is fully resolved
 
-    Ffmpeg(videoPath)
-      .inputOptions(['-ss', String(seekTime)])
-      .outputOptions([
-        '-vframes', '1',
-        '-vf', 'scale=480:270:force_original_aspect_ratio=decrease', // <-- updated scale filter
-        '-c:v', 'libwebp',
-        '-qscale:v', '80',
-        '-preset', 'default'
-      ])
-      .output(outputPath)
-      .on('end', () => resolve())
-      .on('error', (err) => reject(new Error(`FFmpeg error: ${err.message}`)))
-      .run();
+    // Construct the ffmpeg command
+    const command = `"${ffmpegPath}" -i "${videoPath}" -ss ${seekTime} -vframes 1 -vf "scale=480:270:force_original_aspect_ratio=decrease" -c:v libwebp -qscale:v 80 -preset default "${outputFilePath}"`;
+
+    // Execute the ffmpeg command
+    exec(command, (err, stdout, stderr) => {
+      if (err) {
+        reject(new Error(`FFmpeg error: ${stderr || err.message}`));
+      } else {
+        resolve();
+      }
+    });
   });
 };
 

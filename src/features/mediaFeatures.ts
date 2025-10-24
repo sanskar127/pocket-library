@@ -1,9 +1,11 @@
-import path, { relative, basename, extname, join, resolve, dirname } from "path";
+import path, { relative, basename, extname, join, dirname } from "path";
 import { readdir, stat } from 'fs/promises'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { thumbnailsDir, imageFormats, media, videoFormats, mediaDir } from "../states";
 import { generateShortId, generateThumbnail, sanitizeFileName, thumbnailExistsAndValid } from "../utils";
 import { ChunkInterface, ScanImagesInterface, ScanVideosInterface, VideoInterface, VideoMetadata } from "../types";
+import { exec } from 'child_process';
+import ffmpegPath from 'ffmpeg-static';
 import Ffmpeg from "fluent-ffmpeg";
 
 // Retrieve video details and create a response object for a video file
@@ -92,19 +94,34 @@ export const mediaChecker = async (targetPath: string): Promise<boolean> => {
 // Get video width, height and duration in seconds
 export const getVideoMetadata = (videoFullPath: string): Promise<VideoMetadata> => {
   return new Promise((resolve, reject) => {
-    Ffmpeg.ffprobe(videoFullPath, (err, metadata) => {
-      if (err) return reject(err);
+    const command = `"${ffmpegPath}" -i "${videoFullPath}" -v quiet -print_format json -show_format -show_streams`;
 
-      const videoStream = metadata.streams.find(s => s.codec_type === 'video');
-      if (!videoStream || typeof metadata.format.duration !== 'number') {
-        return reject(new Error('Video stream or duration not found'));
+    exec(command, (err, stdout, stderr) => {
+      if (err) { // Check if err is not null or undefined
+        reject(new Error(`FFmpeg error: ${stderr || err.message}`));
+        return;
       }
 
-      const width = videoStream.width || 0;
-      const height = videoStream.height || 0;
-      const duration = metadata.format.duration;
+      try {
+        const metadata = JSON.parse(stdout);
+        const videoStream = metadata.streams.find((s: any) => s.codec_type === 'video');
+        if (!videoStream || typeof metadata.format.duration !== 'number') {
+          reject(new Error('Video stream or duration not found'));
+          return;
+        }
 
-      resolve({ duration, width, height });
+        const width = videoStream.width || 0;
+        const height = videoStream.height || 0;
+        const duration = metadata.format.duration;
+
+        resolve({ duration, width, height });
+      } catch (parseError: unknown) { // Handle unknown error type properly
+        if (parseError instanceof Error) {
+          reject(new Error(`Error parsing metadata: ${parseError.message}`));
+        } else {
+          reject(new Error('Unknown error while parsing metadata'));
+        }
+      }
     });
   });
 };
