@@ -1,16 +1,24 @@
 import { getChunk, mediaChecker, scanImages, scanVideos, transcodingHLS, validateLimit } from "../features/mediaFeatures";
-import { mediaDir, playbackDir, videoFormats, imageFormats, media, setMedia, cachingFile } from '../states';
-import { DirectoryInterface, ImageExtension, requestBodyInterface, ItemType, VideoExtension, mediaInterface } from "../types";
+import { DirectoryInterface, ImageExtension, requestBodyInterface, ItemType, VideoExtension } from "../types";
+import { mediaDir, playbackDir, videoFormats, imageFormats, media, setMedia } from '../states';
 import { Request, Response } from "express";
-import { existsSync, readdirSync, readFileSync } from 'fs';
-import { generateShortId, writeJsonFileAsync } from "../utils";
+import { existsSync, readdirSync } from 'fs';
+import { generateShortId } from "../utils";
 import fs from 'fs/promises'
 import path from 'path';
 
 export const mediaController = async (request: Request, response: Response) => {
-    const { pathname, limit, offset = 0 }: requestBodyInterface = request.body;
+    const {
+        pathname,
+        limit,
+        offset = 0,
+        sorting = {
+            type: 'date',
+            order: 'descending',
+            sortDirectoryFirst: true
+        }
+    }: requestBodyInterface = request.body;
     if (!validateLimit(limit)) return response.status(400).json({ error: 'Invalid limit' });
-    const isCacheExists = existsSync(cachingFile)
 
     const decodedDir = decodeURIComponent(pathname);    // Transforming Encoded URI to string with spaces
     const navigationPath = decodedDir ? path.join(mediaDir, decodedDir) : mediaDir;
@@ -20,12 +28,6 @@ export const mediaController = async (request: Request, response: Response) => {
     if (!existsSync(safePath)) return response.status(404).json({ error: "Directory not found" });
 
     try {
-        if (isCacheExists) {
-            const data = readFileSync(cachingFile, 'utf8');
-            const jsonData: mediaInterface = JSON.parse(data);
-            setMedia(jsonData);
-        }
-
         if (!(pathname in media)) {
             const items = await fs.readdir(navigationPath);
             const entries = await Promise.all(items.map(async item => {
@@ -43,6 +45,7 @@ export const mediaController = async (request: Request, response: Response) => {
                         return {
                             id: generateShortId(path.relative(mediaDir, navigationPath) + stats.mtimeMs),
                             name,
+                            size: -1,
                             type: 'directory',
                             modifiedAt: stats.mtime,
                             url: name,
@@ -77,12 +80,45 @@ export const mediaController = async (request: Request, response: Response) => {
             })).then(entries => entries.filter(item => item !== null)) as ItemType[];
 
             setMedia({ [pathname]: entries })
-
-            // Caching entries 
-            writeJsonFileAsync().catch(error => {
-                console.error('Error writing to the file:', error);
-            });
         }
+
+        // Sorting logic for media
+        setMedia({
+            [pathname]: media[pathname].sort((a, b) => {
+                // First, check if sortDirectoryFirst is set
+                if (sorting.sortDirectoryFirst) {
+                    // Directories first, files later
+                    if (a.type === 'directory' && b.type !== 'directory') return -1; // a is a directory, b is a file
+                    if (a.type !== 'directory' && b.type === 'directory') return 1;  // b is a directory, a is a file
+                } else {
+                    // If sortDirectoryFirst is false, we want files first (default)
+                    if (a.type === 'directory' && b.type !== 'directory') return 1; // a is a directory, b is a file
+                    if (a.type !== 'directory' && b.type === 'directory') return -1; // b is a directory, a is a file
+                }
+
+                // Now apply sorting based on the requested type (name, date, size)
+                const compare = (field: keyof ItemType) => {
+                    const valA = a[field];
+                    const valB = b[field];
+                    if (sorting.order === 'ascending') {
+                        return valA < valB ? -1 : valA > valB ? 1 : 0;
+                    } else {
+                        return valA > valB ? -1 : valA < valB ? 1 : 0;
+                    }
+                };
+
+                switch (sorting.type) {
+                    case 'name':
+                        return compare('name');
+                    case 'date':
+                        return compare('modifiedAt');
+                    case 'size':
+                        return compare('size');
+                    default:
+                        return 0;
+                }
+            })
+        });
 
         const { data, hasMore } = await getChunk(pathname, limit, offset);
         response.status(200).json({ data, hasMore });

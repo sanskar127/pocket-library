@@ -24,6 +24,7 @@ export interface ImageInterface {
 export interface DirectoryInterface {
   id: string;
   name: string;
+  size: -1;
   type: 'directory';
   modifiedAt: Date;
   url: string;
@@ -41,10 +42,17 @@ export interface ScanImagesInterface {
 
 type DeviceType = "mobile" | "tablet" | "laptop" | "desktop"
 
+interface sortInterface {
+  type: 'name' | 'date' | 'size' 
+  order: 'ascending' | 'descending'
+  sortDirectoryFirst: boolean
+}
+
 export interface requestBodyInterface {
   pathname: string;
   offset: number;
-  limit: number
+  limit: number;
+  sorting: sortInterface
 }
 
 export type VideoExtension =

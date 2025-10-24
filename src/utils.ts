@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import Ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs'
-import { mkdir, writeFile } from 'fs/promises'
 import qrcode from 'qrcode-terminal';
 import os from 'os'
 import { cachingFile, media } from './states';
@@ -82,22 +81,23 @@ export const generateQrCode = (data: string): Promise<string> => {
   });
 };
 
-export const writeJsonFileAsync = (): Promise<void> => {
+export const writeCacheData = () => {
   const dir = path.dirname(cachingFile);
 
-  return mkdir(dir, { recursive: true }) // Ensure the directory exists
-    .then(() => {
-      // Convert media object to JSON string
-      const jsonString = JSON.stringify(media, null, 2);
+  try {
+    // Ensure the directory exists (synchronously)
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
 
-      // Write the JSON to the file
-      return writeFile(cachingFile, jsonString);
-    })
-    .then(() => {
-      console.log('File written successfully to:', cachingFile);
-    })
-    .catch((error) => {
-      console.error('Error writing JSON file:', error);
-      throw error; // Rethrow the error to maintain the rejected promise
-    });
+    // Convert media object to JSON string
+    const jsonString = JSON.stringify(media, null, 2);
+
+    // Write the JSON to the file (synchronously)
+    fs.writeFileSync(cachingFile, jsonString);
+
+  } catch (error) {
+    console.error('Error writing JSON file:', error);
+    throw error; // Rethrow the error to maintain the behavior of the original function
+  }
 };
