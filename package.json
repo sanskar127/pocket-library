@@ -1,0 +1,9 @@
+{
+  "name": "pocket",
+  "version": "0.0.1",
+  "main": "server.js",
+  "bin": {
+    "pocket": "server.js"
+  },
+  "dependencies": {}
+}
