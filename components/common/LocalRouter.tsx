@@ -19,6 +19,9 @@ const LocalRouter: FC<{ children: ReactNode }> = ({ children }) => {
         const compatible = await LocalAuthentication.hasHardwareAsync();
         const enrolled = await LocalAuthentication.isEnrolledAsync();
 
+        console.log("compatible: ", compatible)
+        console.log("enrolled: ", enrolled)
+
         dispatch(setIsAvailable(compatible && enrolled));
     }, [dispatch]);
 

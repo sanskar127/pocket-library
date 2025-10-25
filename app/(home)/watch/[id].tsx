@@ -51,11 +51,21 @@ export default function WatchScreen() {
       <StatusBar backgroundColor="#000" barStyle="light-content" />
       <VideoView style={styles.video} player={player} allowsFullscreen allowsPictureInPicture />
 
-      <View>
-        <View><Text>{selectedMedia?.name}</Text></View>
-        <View>
-          <Text>{formatRelativeTime(selectedMedia?.modifiedAt)} • {selectedMedia?.type}</Text>
-          <Pressable><Text>Download ({formatSize(selectedMedia?.size)})</Text></Pressable>
+      {/* Video Info Section */}
+      <View className="px-4 py-3">
+        <Text className="text-white text-lg font-semibold mb-1">
+          {selectedMedia?.name}
+        </Text>
+
+        <View className='flex flex-row justify-between'>
+          <Text className="text-gray-400 text-sm">
+            {formatRelativeTime(selectedMedia?.modifiedAt)} • {selectedMedia?.type}
+          </Text>
+          <Pressable className="mt-2 bg-primary px-4 py-2 rounded-sm w-fit self-start">
+            <Text className="text-white text-sm font-medium">
+              Download ({formatSize(selectedMedia?.size)})
+            </Text>
+          </Pressable>
         </View>
       </View>
 
