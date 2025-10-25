@@ -1,19 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ExternalPathString, RelativePathString } from "expo-router";
 
 interface initialStateInterface {
-  prevRoute: ExternalPathString | RelativePathString | "/";
   isEnable: boolean;
-  isAvailable: boolean;
-  isLocked: boolean;
+  isAvailable: { compatibility: boolean, enrolled: boolean };
 }
 
 const initialState: initialStateInterface = {
-  prevRoute: "/",
   isEnable: false,
-  isAvailable: false,
-  isLocked: true,
+  isAvailable: { compatibility: false, enrolled: false },
 };
 
 // AsyncThunk to fetch `isEnable` value from AsyncStorage
@@ -34,18 +29,12 @@ const lockSlice = createSlice({
   name: 'lock',
   initialState,
   reducers: {
-    setPrevRoute: (state, action: PayloadAction<ExternalPathString | RelativePathString>) => {
-      state.prevRoute = action.payload;
-    },
     // Direct setter for isEnable and isLocked
     setIsEnableDirect: (state, action: PayloadAction<boolean>) => {
       state.isEnable = action.payload;
     },
-    setIsAvailable: (state, action: PayloadAction<boolean>) => {
+    setIsAvailable: (state, action: PayloadAction<{ compatibility: boolean, enrolled: boolean }>) => {
       state.isAvailable = action.payload;
-    },
-    setIsLocked: (state, action: PayloadAction<boolean>) => {
-      state.isLocked = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -60,5 +49,5 @@ const lockSlice = createSlice({
   },
 });
 
-export const { setPrevRoute, setIsEnableDirect, setIsAvailable, setIsLocked } = lockSlice.actions;
+export const { setIsEnableDirect, setIsAvailable } = lockSlice.actions;
 export default lockSlice.reducer;

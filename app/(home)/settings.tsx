@@ -7,7 +7,7 @@ import { RootState } from '@/store/store';
 
 const SettingsScreen = () => {
   const [toggleLock, setToggleLock] = useState<boolean>(false);
-  const isAvailable = useSelector((state: RootState) => state.lock.isAvailable);
+  // const isAvailable = useSelector((state: RootState) => state.lock.isAvailable);
   const dispatch = useDispatch();
   const colorScheme = useColorScheme(); // Detects whether the system is in dark or light mode
 
@@ -83,7 +83,7 @@ const SettingsScreen = () => {
         <Text style={styles.switchLabel}>Toggle to Enable/Disable App Lock</Text>
         <Switch
           value={toggleLock}
-          disabled={isAvailable}
+          // disabled={isAvailable}
           onValueChange={handleToggle}
           trackColor={{ false: '#767577', true: '#81b0ff' }}
           thumbColor={toggleLock ? '#f5dd4b' : '#f4f3f4'}
