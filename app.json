@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "pocket-media-library",
-    "slug": "pocket-media-library",
-    "version": "1.0.0",
+    "name": "Pocket Media Library",
+    "slug": "pocket",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pocketmedialibrary",
@@ -14,7 +14,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#121212"
       },
       "edgeToEdgeEnabled": true
     },
@@ -31,7 +31,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#121212"
         }
       ],
       "expo-video"

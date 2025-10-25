@@ -3,9 +3,10 @@ import { RenderItemInterface, VideoInterface } from '@/types/types';
 // import { useEvent } from 'expo';
 import Video from '@/components/common/Video';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { StyleSheet, View, Dimensions, Platform, Text, FlatList, ActivityIndicator, } from 'react-native';
+import { StyleSheet, View, Dimensions, Platform, Text, FlatList, ActivityIndicator, StatusBar, Pressable } from 'react-native';
 import { useSelector } from 'react-redux';
 import useFetchMedia from '@/hooks/useFetchMedia';
+import { formatRelativeTime, formatSize } from '@/utils/utils';
 
 const { width: deviceWidth } = Dimensions.get('window');
 
@@ -20,6 +21,24 @@ export default function WatchScreen() {
     return null;
   };
 
+  const headerComponent = () => (
+    <View>
+      <Text className='text-gray-600 text-lg font-light pl-2'>related videos</Text>
+    </View>
+  )
+
+  const footerComponent = () => (
+    isLoading ? (
+      <View className="py-4">
+        <ActivityIndicator size="small" color="#fff" />
+      </View>
+    ) : (isError ? (
+      <View className="flex-1 justify-center items-center">
+        <Text className="text-white mt-4">Error to Fetch Data</Text>
+      </View>
+    ) : null)
+  )
+
   const player = useVideoPlayer((baseURL + selectedMedia?.url), player => {
     player.loop = true;
     player.play();
@@ -29,29 +48,30 @@ export default function WatchScreen() {
 
   return (
     <View className='flex flex-1 w-full'>
+      <StatusBar backgroundColor="#000" barStyle="light-content" />
       <VideoView style={styles.video} player={player} allowsFullscreen allowsPictureInPicture />
+
+      <View>
+        <View><Text>{selectedMedia?.name}</Text></View>
+        <View>
+          <Text>{formatRelativeTime(selectedMedia?.modifiedAt)} • {selectedMedia?.type}</Text>
+          <Pressable><Text>Download ({formatSize(selectedMedia?.size)})</Text></Pressable>
+        </View>
+      </View>
+
       <View style={styles.controlsContainer}>
         <FlatList
           data={data}
           keyExtractor={(item: any) => item.id}
           renderItem={renderItem}
+          ListHeaderComponent={headerComponent}
           onEndReached={updateOffset}
           onEndReachedThreshold={0.2}
           contentContainerStyle={{
-            padding: 16,
-            rowGap: 16,
+            // padding: 16,
+            // rowGap: 16,
           }}
-          ListFooterComponent={
-            isLoading ? (
-              <View className="py-4">
-                <ActivityIndicator size="small" color="#fff" />
-              </View>
-            ) : (isError ? (
-              <View className="flex-1 justify-center items-center">
-                <Text className="text-white mt-4">Error to Fetch Data</Text>
-              </View>
-            ) : null)
-          }
+          ListFooterComponent={footerComponent}
         />
       </View>
     </View>
