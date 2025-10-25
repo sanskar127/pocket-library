@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useRouter } from 'expo-router';
-import { setSelectedMedia } from '@/features/contentSlice';
+import { pushSelectedMedia } from '@/features/localRouterSlice';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -25,7 +25,7 @@ const VideoCard: FC<{ details: VideoInterface }> = ({ details }) => {
   const router = useRouter()
 
   const handlePress = () => {
-    dispatch(setSelectedMedia(details))
+    dispatch(pushSelectedMedia(details))
     router.push(`/watch/${id}`)
   }
 

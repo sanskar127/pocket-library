@@ -1,11 +1,14 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
+import { ImageInterface, VideoInterface } from "@/types/types"
 
 interface LocalRouterState {
-  history: string[]
+  history: string[],
+  selectedMediaStack: (VideoInterface | ImageInterface)[]
 }
 
 const initialState: LocalRouterState = {
-  history: []
+  history: [],
+  selectedMediaStack: []
 }
 
 const localRouterSlice = createSlice({
@@ -18,8 +21,14 @@ const localRouterSlice = createSlice({
     removeLastRoute: (state) => {
       state.history.pop()
     },
+    pushSelectedMedia: (state, action: PayloadAction<VideoInterface | ImageInterface>) => {
+      state.selectedMediaStack.push(action.payload)
+    },
+    popSelectedMedia: (state) => {
+      state.selectedMediaStack.pop()
+    }
   }
 })
 
-export const { addRouteToHistory, removeLastRoute } = localRouterSlice.actions
+export const { addRouteToHistory, removeLastRoute, pushSelectedMedia, popSelectedMedia } = localRouterSlice.actions
 export default localRouterSlice.reducer

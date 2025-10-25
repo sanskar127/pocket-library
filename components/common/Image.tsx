@@ -13,7 +13,7 @@ import { formatSize, formatRelativeTime } from '@/utils/utils';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useRouter } from 'expo-router';
-import { setSelectedMedia } from '@/features/contentSlice';
+import { pushSelectedMedia } from '@/features/localRouterSlice';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -24,7 +24,7 @@ const ImageCard: FC<{ details: ImageInterface }> = ({ details }) => {
   const dispatch = useDispatch()
 
   const handlePress = () => {
-    dispatch(setSelectedMedia(details))
+    dispatch(pushSelectedMedia(details))
     router.push(`/view/${id}`)
   }
 

@@ -3,14 +3,12 @@ import { setupListeners } from '@reduxjs/toolkit/query'
 import { mediaApi } from "@/api/mediaApi"
 import baseUrlReducer from "@/features/baseQuery"
 import localRouterReducer from "@/features/localRouterSlice"
-import contentReducer from "@/features/contentSlice"
 import lockReducer from "@/features/lockSlice"
 
 export const store = configureStore({
   reducer: {
     baseurl: baseUrlReducer,
     localRouter: localRouterReducer,
-    content: contentReducer,
     lock: lockReducer,
     [mediaApi.reducerPath]: mediaApi.reducer
   },

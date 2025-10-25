@@ -4,7 +4,8 @@ import { useSelector } from 'react-redux';
 
 export default function ViewScreen() {
   const baseUrl = useSelector((state: RootState) => state.baseurl.baseURL);
-  const selectedItem = useSelector((state: RootState) => state.content.selectedMedia)
+  const selectedMediaStack = useSelector((state: RootState) => state.localRouter.selectedMediaStack)
+  const selectedItem = selectedMediaStack[selectedMediaStack.length - 1]
 
   if (!selectedItem) {
     return (

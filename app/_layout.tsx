@@ -19,7 +19,6 @@ export default function RootLayout() {
               }}
             />
             <Stack.Screen name="(home)" options={{ headerShown: false }} />
-            <Stack.Screen name="lock" options={{ headerShown: false }} />
           </Stack>
         </LocalRouter>
       </Lockscreen>

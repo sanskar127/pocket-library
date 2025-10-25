@@ -3,7 +3,7 @@ import { RootState } from '@/store/store'
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useSelector } from 'react-redux'
 // import { getLimit } from '@/utils/utils'
-import { Dimensions } from 'react-native'
+// import { Dimensions } from 'react-native'
 import { ItemType } from '@/types/types'
 
 const useFetchMedia = () => {
@@ -18,7 +18,7 @@ const useFetchMedia = () => {
   // Memoized pathname
   const pathname = useMemo(() => routeHistory.join('/'), [routeHistory])
 
-  const [deviceWidth, setDeviceWidth] = useState(Dimensions.get('window').width)
+  // const [deviceWidth, setDeviceWidth] = useState(Dimensions.get('window').width)
 
   // Memoized limits based on device width
   // const { initialLimit, limit } = useMemo(() => getLimit(deviceWidth), [deviceWidth])
@@ -34,19 +34,19 @@ const useFetchMedia = () => {
   }
 
   // Handle screen dimension changes
-  useEffect(() => {
-    const handleDimensionChange = ({ window }: { window: any }) => {
-      const newWidth = window.width
-      if (Math.abs(newWidth - deviceWidth) > 10) {
-        setDeviceWidth(newWidth)
-      }
-    }
+  // useEffect(() => {
+  //   const handleDimensionChange = ({ window }: { window: any }) => {
+  //     const newWidth = window.width
+  //     if (Math.abs(newWidth - deviceWidth) > 10) {
+  //       setDeviceWidth(newWidth)
+  //     }
+  //   }
 
-    const subscription = Dimensions.addEventListener('change', handleDimensionChange)
-    return () => {
-      subscription?.remove?.()
-    }
-  }, [deviceWidth])
+  //   const subscription = Dimensions.addEventListener('change', handleDimensionChange)
+  //   return () => {
+  //     subscription?.remove?.()
+  //   }
+  // }, [deviceWidth])
 
   const handleReset = () => {
     if (!isInitialLoad.current) {

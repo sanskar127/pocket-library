@@ -11,7 +11,8 @@ import { formatRelativeTime, formatSize } from '@/utils/utils';
 const { width: deviceWidth } = Dimensions.get('window');
 
 export default function WatchScreen() {
-  const selectedMedia = useSelector((state: RootState) => state.content.selectedMedia)
+  const selectedMediaStack = useSelector((state: RootState) => state.localRouter.selectedMediaStack)
+  const selectedMedia = selectedMediaStack[selectedMediaStack.length - 1]
   const baseURL = useSelector((state: RootState) => state.baseurl.baseURL)
   const { data, isLoading, updateOffset, isError } = useFetchMedia();
 
