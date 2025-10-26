@@ -18,7 +18,10 @@ const LocalRouter: FC<{ children: ReactNode }> = ({ children }) => {
     const backAction = () => {
       if ((nativePathname === '/dashboard') && routeHistory.length === 0) BackHandler.exitApp()
       else if (nativePathname === '/dashboard') dispatch(removeLastRoute())
-      else if (nativePathname.startsWith('/watch') && selectedMediaStack.length !== 0) dispatch(popSelectedMedia())
+      else if (nativePathname.startsWith('/watch') && selectedMediaStack.length !== 0) {
+        router.back()
+        dispatch(popSelectedMedia())
+      }
       else router.back()
       return true; // Prevent default behavior (going back)
     };
