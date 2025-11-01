@@ -7,9 +7,9 @@ const Directory: FC<{ details: DirectoryInterface }> = ({ details }) => {
   const { name, url } = details;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden transition-all">
-      <NavLink to={url} className="relative aspect-video w-full flex items-center justify-center bg-primary text-dark cursor-pointer">
-        <FaFolderOpen className="text-5xl md:text-6xl lg:text-7xl" />
+    <div className="w-full lg:w-md flex flex-col h-full overflow-hidden transition-all">
+      <NavLink to={url} className="relative aspect-video flex items-center justify-center bg-primary text-dark cursor-pointer">
+        <FaFolderOpen className="text-6xl md:text-6xl lg:text-8xl" />
       </NavLink>
       <div className="flex flex-col gap-1 px-3 py-2">
         <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-white line-clamp-2">

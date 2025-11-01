@@ -6,21 +6,54 @@ export interface VideoInterface {
   size: number;
   duration: number;
   modifiedAt: Date;
-  type?: string;
+  type: VideoExtension;
   url: string;
   thumbnail: string;
+}
+
+export interface ImageInterface {
+  id: string;
+  name: string;
+  size: number;
+  modifiedAt: Date;
+  type: ImageExtension;
+  url: string;
 }
 
 export interface DirectoryInterface {
   id: string;
   name: string;
-  type: string;
+  type: 'directory';
+  modifiedAt: Date;
   url: string;
 }
 
-export type ItemType = VideoInterface | DirectoryInterface
+export type ItemType = VideoInterface | DirectoryInterface | ImageInterface
 
 type DeviceType = "mobile" | "tablet" | "laptop" | "desktop"
+
+export type VideoExtension =
+  | ".mp4"
+  | ".mov"
+  | ".avi"
+  | ".mkv"
+  | ".wmv"
+  | ".flv"
+  | ".f4v"
+  | ".webm"
+  | ".mpeg"
+  | ".mpg";
+
+export type ImageExtension =
+  | ".jpg"
+  | ".jpeg"
+  | ".png"
+  | ".gif"
+  | ".webp"
+  | ".bmp"
+  | ".tiff"
+  | ".tif"
+  | ".svg";
 
 export interface DeviceInterface {
   (): { 
@@ -33,7 +66,7 @@ export type QueryKeyType = ['media', string]
 
 
 export interface ResponseInterface {
-  media: ItemType[]
+  data: ItemType[]
   hasMore: boolean
 }
 

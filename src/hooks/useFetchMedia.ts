@@ -8,7 +8,7 @@ const useFetchMedia: UseFetchMediaInterface = () => {
     const { initialLimit, limit } = getLimit()
 
     const fetchVideos = async ({ pageParam: offset }: { pageParam: number }): Promise<ResponseInterface> => {
-        const res = await fetch(`/api/videos/`, {
+        const res = await fetch(`/api/media/`, {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -28,7 +28,7 @@ const useFetchMedia: UseFetchMediaInterface = () => {
         const jsonResponse: ResponseInterface = await res.json();
 
 
-        if (jsonResponse === null || typeof jsonResponse !== 'object' || !('media' in jsonResponse) || !('hasMore' in jsonResponse)) {
+        if (jsonResponse === null || typeof jsonResponse !== 'object' || !('data' in jsonResponse) || !('hasMore' in jsonResponse)) {
             throw new Error("API response was null or did not match expected structure.");
         }
 

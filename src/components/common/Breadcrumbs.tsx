@@ -20,7 +20,7 @@ const Breadcrumbs = () => {
             <ol className="flex items-center gap-2">
                 <li
                     className="cursor-pointer hover:text-primary"
-                    onClick={() => navigate(0)}
+                    onClick={() => navigate('/')}
                     aria-label="Go to home"
                 >
                     Home

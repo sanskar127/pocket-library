@@ -1,4 +1,4 @@
-import { isBrowser, isMobile, isTablet } from "react-device-detect"
+import type { ItemType } from "./types/types";
 
 export const formatRelativeTime = (dateString: Date | undefined): string => {
   if (!dateString) return ""
@@ -52,8 +52,97 @@ export const formatTime = (time: number): string => {
 };
 
 export const getLimit = () => {
-    if (isMobile) return { initialLimit: 3, limit: 2}
-    else if (isTablet) return { initialLimit: 10, limit: 2}
-    else if (isBrowser) return { initialLimit: 20, limit: 5}
+    if (window.innerWidth < 600) return { initialLimit: 3, limit: 2}
+    else if (window.innerWidth < 767) return { initialLimit: 10, limit: 2}
+    // else if (window.innerWidth < 1279) return { initialLimit: 15, limit: 3}
+    else if (window.innerWidth < 1920) return { initialLimit: 20, limit: 5}
     else return { initialLimit: 30, limit: 6}
 }
+
+function getGroupLabel(modified: string | Date): string {
+  const date = typeof modified === "string" ? new Date(modified) : modified;
+
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    // invalid date, fallback label
+    return "Unknown";
+  }
+
+  const now = new Date();
+
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfModified = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const diffTime = startOfToday.getTime() - startOfModified.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays === 2) return "2 days ago";
+
+  const nowDay = now.getDay();
+  const startOfThisWeek = new Date(now);
+  startOfThisWeek.setDate(now.getDate() - nowDay);
+
+  const startOfLastWeek = new Date(startOfThisWeek);
+  startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+
+  const endOfLastWeek = new Date(startOfThisWeek);
+  endOfLastWeek.setDate(startOfThisWeek.getDate() - 1);
+
+  if (date >= startOfThisWeek) return "This Week";
+  if (date >= startOfLastWeek && date <= endOfLastWeek) return "Last Week";
+
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+
+  const modifiedMonth = date.getMonth();
+  const modifiedYear = date.getFullYear();
+
+  if (modifiedYear === thisYear && modifiedMonth === thisMonth) return "This Month";
+
+  const lastMonthDate = new Date(now);
+  lastMonthDate.setMonth(thisMonth - 1);
+
+  if (
+    modifiedYear === lastMonthDate.getFullYear() &&
+    modifiedMonth === lastMonthDate.getMonth()
+  ) {
+    return "Last Month";
+  }
+
+  if (modifiedYear === thisYear) return "Earlier This Year";
+  if (modifiedYear === thisYear - 1) return "Last Year";
+
+  return "Years Ago";
+}
+
+export function groupByDate(data: ItemType[]) {
+  const groups: Record<string, ItemType[]> = {};
+
+  for (const item of data) {
+    if ('modifiedAt' in item && item.modifiedAt) {
+      const label = getGroupLabel(item.modifiedAt);
+      if (!groups[label]) groups[label] = [];
+      groups[label].push(item);
+    } else {
+      if (!groups["Uncategorized"]) groups["Uncategorized"] = [];
+      groups["Uncategorized"].push(item);
+    }
+  }
+
+  return groups;
+}
+
+export const groupOrder = [
+  "Today",
+  "Yesterday",
+  "2 days ago",
+  "This Week",
+  "Last Week",
+  "This Month",
+  "Last Month",
+  "Earlier This Year",
+  "Last Year",
+  "Years Ago",
+  "Uncategorized" // Optional
+];

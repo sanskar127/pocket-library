@@ -9,7 +9,7 @@ import { FaExpand, FaCompress, FaAngleLeft } from 'react-icons/fa';
 
 // External Components
 import { PlaybackSpeedControl, VolumeControl, ProgressBar, TimeDisplay } from './Player';
-import VideoNotFound from '../common/VideoNotFound';
+import NotFound from '../common/NotFound';
 
 const VideoPlayer: FC<{ content: VideoInterface | undefined }> = ({ content }) => {
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,7 +70,7 @@ const VideoPlayer: FC<{ content: VideoInterface | undefined }> = ({ content }) =
     }
   };
 
-  if (!content) return <VideoNotFound />
+  if (!content) return <NotFound itemName='Video' />
 
   return (
     <div

@@ -5,10 +5,10 @@ const useLastNonWatchPath = () => {
     const location = useLocation();
     const lastNonWatchPathRef = useRef(location.pathname);
 
-    // More precise: matches only paths like "/watch", "/watch:", or "/watch/"
-    const isWatchPage = /^\/watch($|[/:])/.test(location.pathname);
+    // Matches paths like "/watch", "/watch:", "/watch/", "/view", "/view:", or "/view/"
+    const isWatchOrViewPage = /^\/(watch|view)($|[/:])/.test(location.pathname);
 
-    if (!isWatchPage && lastNonWatchPathRef.current !== location.pathname) {
+    if (!isWatchOrViewPage && lastNonWatchPathRef.current !== location.pathname) {
         lastNonWatchPathRef.current = location.pathname;
     }
 
