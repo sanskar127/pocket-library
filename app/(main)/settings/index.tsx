@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, Text, View, Switch, useColorScheme, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { setIsEnableDirect } from '@/features/lockSlice';
-import { RootState } from '@/store/store';
+// import { RootState } from '@/store/store';
 
 const SettingsScreen = () => {
   const [toggleLock, setToggleLock] = useState<boolean>(false);
@@ -51,7 +51,6 @@ const SettingsScreen = () => {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colorScheme === 'dark' ? '#1e1e1e' : '#FFFFFF', // Dark mode background or light mode background
       padding: 16,
     },
     header: {

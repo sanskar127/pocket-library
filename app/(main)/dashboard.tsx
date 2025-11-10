@@ -10,7 +10,7 @@ import { Picker } from '@react-native-picker/picker';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-export default function Dashboard() {
+export default function HomeScreen() {
   const { data, isLoading, isRefreshing, handleRefresh, filter, setFilter, updateOffset, isError } = useFetchMedia();
   const [newFilter, setNewFilter] = useState<filterInterface>(filter);
 
@@ -26,7 +26,7 @@ export default function Dashboard() {
     return null;
   };
 
-  const handlePressable = () => bottomSheetRef.current?.expand();
+  // const handlePressable = () => bottomSheetRef.current?.expand();
 
   const handleSheetChanges = (index: number) => {
     console.log('Sheet changed to index:', index);
@@ -50,7 +50,7 @@ export default function Dashboard() {
         renderItem={renderItem}
         ListHeaderComponent={
           <View>
-            <Pressable onPress={handlePressable}>
+            <Pressable>
               <Text>
                 <Ionicons name="funnel" size={13} color="currentColor" /> Filter
               </Text>
@@ -70,7 +70,7 @@ export default function Dashboard() {
       />
 
       {/* BottomSheet for Filters */}
-      <BottomSheet ref={bottomSheetRef} snapPoints={snapPoints} onChange={handleSheetChanges}>
+      {/* <BottomSheet ref={bottomSheetRef} snapPoints={snapPoints} onChange={handleSheetChanges}>
         <BottomSheetView>
           <View>
             <Text>Choose Type:</Text>
@@ -116,7 +116,7 @@ export default function Dashboard() {
             <Text>Apply Filter</Text>
           </Pressable>
         </BottomSheetView>
-      </BottomSheet>
+      </BottomSheet> */}
     </GestureHandlerRootView>
   );
 }

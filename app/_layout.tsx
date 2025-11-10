@@ -18,7 +18,7 @@ export default function RootLayout() {
                 title: 'Scanner',
               }}
             />
-            <Stack.Screen name="(home)" options={{ headerShown: false }} />
+            <Stack.Screen name="(main)" options={{ headerShown: false }} />
           </Stack>
         </LocalRouter>
       </Lockscreen>

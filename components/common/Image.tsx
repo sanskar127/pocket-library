@@ -25,7 +25,7 @@ const ImageCard: FC<{ details: ImageInterface }> = ({ details }) => {
 
   const handlePress = () => {
     dispatch(pushSelectedMedia(details))
-    router.push(`/view/${id}`)
+    router.push(`/feed/${id}`)
   }
 
   return (
