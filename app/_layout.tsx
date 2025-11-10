@@ -10,7 +10,7 @@ export default function RootLayout() {
     <Provider store={store}>
       <Lockscreen>
         <LocalRouter>
-          <Stack screenOptions={{ headerStyle: { backgroundColor: "#1e1e1e" }, headerTintColor: "#ffffff", contentStyle: { backgroundColor: "#1e1e1e" } }}>
+          <Stack screenOptions={{ headerStyle: { backgroundColor: "#1e1e1e" }, headerTintColor: "#ffffff", contentStyle: { backgroundColor: "#000000" } }}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen
               name="scanner"

@@ -51,16 +51,27 @@ const Lockscreen: FC<{ children: ReactNode }> = ({ children }) => {
         }
     };
 
-    if (isEnable && isLocked) return (
-        <View className="bg-background flex-1 justify-center items-center">
-            <Pressable
-                onPress={handleAuthenticate}>
-                <Text className="text-primary text-lg font-light">Unlock</Text>
-            </Pressable>
-        </View>
+    return (
+        <>
+            <View
+                style={{
+                    display: (isEnable && isLocked) ? 'flex' : 'none',
+                    position: 'absolute', // Fix position
+                    zIndex: 100,
+                    top: 0,              // Cover top of the screen
+                    left: 0,             // Cover left side of the screen
+                    right: 0,            // Cover right side of the screen
+                    bottom: 0,           // Cover bottom of the screen
+                }}
+                className="bg-background flex justify-center items-center"
+            >
+                <Pressable onPress={handleAuthenticate}>
+                    <Text className="text-primary text-lg font-light">Unlock</Text>
+                </Pressable>
+            </View>
+            {children}
+        </>
     )
-
-    return children
 }
 
 export default Lockscreen

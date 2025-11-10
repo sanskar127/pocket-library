@@ -1,105 +1,89 @@
 import { useGetMediaMutation } from '@/api/mediaApi'
 import { RootState } from '@/store/store'
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
-// import { getLimit } from '@/utils/utils'
-// import { Dimensions } from 'react-native'
-import { ItemType } from '@/types/types'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { filterInterface, ItemType } from '@/types/types'
 
 const useFetchMedia = () => {
   const [getMedia, { isLoading, isError }] = useGetMediaMutation()
-  const [isRefreshing, setRefreshing] = useState(false)
   const [data, setData] = useState<ItemType[]>([])
-  const [hasMore, setHasMore] = useState<boolean>(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [filter, setFilter] = useState<filterInterface>({
+    type: 'name',
+    order: 'ascending',
+    sortDirectoryFirst: true
+  })
   const [offset, setOffset] = useState(0)
-  const limit = 7
+  const [isRefreshing, setRefreshing] = useState(false)
+
+  const LIMIT = 7
+  const FILTER_KEY = 'filter'
 
   const routeHistory = useSelector((state: RootState) => state.localRouter.history)
-  // Memoized pathname
-  const pathname = useMemo(() => routeHistory.join('/'), [routeHistory])
-
-  // const [deviceWidth, setDeviceWidth] = useState(Dimensions.get('window').width)
-
-  // Memoized limits based on device width
-  // const { initialLimit, limit } = useMemo(() => getLimit(deviceWidth), [deviceWidth])
-
-  const isInitialLoad = useRef(true)
+  const pathname = routeHistory.join('/')
 
   // Update offset for pagination
   const updateOffset = () => {
-    if (hasMore) {
-      // setOffset(prev => prev + (prev === 0 ? initialLimit : limit))
-      setOffset(prev => prev + 7)
-    }
+    if (hasMore) setOffset(prev => prev + LIMIT)
   }
 
-  // Handle screen dimension changes
-  // useEffect(() => {
-  //   const handleDimensionChange = ({ window }: { window: any }) => {
-  //     const newWidth = window.width
-  //     if (Math.abs(newWidth - deviceWidth) > 10) {
-  //       setDeviceWidth(newWidth)
-  //     }
-  //   }
-
-  //   const subscription = Dimensions.addEventListener('change', handleDimensionChange)
-  //   return () => {
-  //     subscription?.remove?.()
-  //   }
-  // }, [deviceWidth])
-
-  const handleReset = () => {
-    if (!isInitialLoad.current) {
-      setData([])
-      setHasMore(false)
-      setOffset(0)
-    }
-    isInitialLoad.current = false
-  }
-
-  // Reset data on pathname change
+  // Reset data on pathname or filter change
   useEffect(() => {
-    handleReset()
-  }, [pathname])
+    setData([])
+    setHasMore(false)
+    setOffset(0)
+  }, [pathname, filter])
 
-  // Fetch media data
+  // Handling Filter/sorting
+  const handleFilter = useCallback(async () => {
+    try {
+      const storedFilter = await AsyncStorage.getItem(FILTER_KEY)
+      if (storedFilter === null) {
+        await AsyncStorage.setItem(FILTER_KEY, JSON.stringify(filter))
+      } else {
+        setFilter(JSON.parse(storedFilter))
+      }
+    } catch (error) {
+      console.error("Failed to Get Filter Data, ", error)
+    }
+  }, [filter])
+
+  // Fetch media data based on current filter and offset
   const fetchData = useCallback(async () => {
     try {
-      // const currentLimit = offset === 0 ? initialLimit : limit
-      const response: { data: ItemType[], hasMore: boolean } = await getMedia({ pathname, offset, limit }).unwrap()
-
-      if (response) {
-        setData(prev => [...prev, ...response.data])
-        setHasMore(response.hasMore)
-      }
-
+      const response = await getMedia({ pathname, offset, limit: LIMIT, sorting: filter }).unwrap()
+      setData(prev => [...prev, ...response.data])
+      setHasMore(response.hasMore)
     } catch (error) {
-      // console.error('Failed to fetch media:', error)
+      console.error('Failed to fetch media:', error)
     }
-  }, [pathname, getMedia, offset])
+  }, [pathname, offset, filter, getMedia])
 
-  // Trigger data fetch when the limit changes or initial fetch
   useEffect(() => {
-    // if (limit && initialLimit) {
-      fetchData()
-    // }
-  }, [fetchData])
+    // Fetch data only when filter is stable and after offset changes
+    fetchData()
+  }, [filter, offset, fetchData])
 
-  // Handle pull-to-refresh action
+  // Handle refresh action
   const handleRefresh = async () => {
     setRefreshing(true)
-    handleReset()
-    await fetchData() // Manually trigger the data fetch again
+    setData([])
+    setHasMore(false)
+    setOffset(0)
+    await fetchData()
     setRefreshing(false)
   }
 
   return {
     data,
     isLoading,
-    isRefreshing,
-    handleRefresh,
-    updateOffset,
     isError,
+    filter,
+    isRefreshing,
+    setFilter,
+    handleRefresh,
+    updateOffset
   }
 }
 

@@ -93,3 +93,9 @@ export interface UseFetchMediaResult {
 export interface RenderItemInterface {
   (items: Record<string, any>): React.JSX.Element | null
 }
+
+export interface filterInterface {
+  type: 'name' | 'date' | 'size' 
+  order: 'ascending' | 'descending'
+  sortDirectoryFirst: boolean
+}
