@@ -1,4 +1,4 @@
-import type { ItemType } from "@/types/types";
+import type { ImageExtension, ItemType, VideoExtension } from "@/types/types";
 
 export const formatRelativeTime = (dateString: Date | undefined): string => {
   if (!dateString) return ""
@@ -147,3 +147,24 @@ export const groupOrder = [
   "Years Ago",
   "Uncategorized" // Optional
 ];
+
+export const videoFormats: Record<string, VideoExtension> = {
+  "video/mp4": ".mp4",                  // MP4 Video (Standard)
+  "video/quicktime": ".mov",            // MOV Video (QuickTime format)
+  "video/x-msvideo": ".avi",            // AVI Video (Microsoft's format)
+  "video/x-matroska": ".mkv",           // MKV Video (Matroska format)
+  "video/x-ms-wmv": ".wmv",             // WMV Video (Windows Media Video)
+  "video/x-flv": ".flv",                // FLV Video (Flash Video)
+  "video/webm": ".webm",                // WebM (Open-source video format)
+  "video/mpeg": ".mpeg",                // MPEG Video (Moving Picture Experts Group)
+};
+
+export const imageFormats: Record<string, ImageExtension> = {
+  "image/jpeg": ".jpg",       // JPEG image (common format for photos)
+  "image/png": ".png",        // PNG image (supports transparency)
+  "image/gif": ".gif",        // GIF image (supports animation)
+  "image/webp": ".webp",      // WebP image (modern image format for the web)
+  "image/bmp": ".bmp",        // BMP image (Bitmap, often uncompressed)
+  "image/tiff": ".tiff",      // TIFF image (high-quality image format)
+  "image/svg+xml": ".svg",    // SVG image (Scalable Vector Graphics)
+};

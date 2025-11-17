@@ -12,8 +12,21 @@ export const mediaApi = createApi({
                 method: 'POST',
                 body: { pathname, offset, limit, sorting }
             })
+        }),
+        getSelectedMedia: builder.mutation({
+            query: ({ id, pathname }: { id: string, pathname: string }) => ({
+                url: `/media/${id}`,
+                method: 'POST',
+                body: { pathname }
+            })
+        }),
+        resetMedia: builder.mutation({
+            query: () => ({
+                url: '/media/reset',
+                method: 'DELETE'
+            })
         })
     })
 })
 
-export const { useGetMediaMutation } = mediaApi
+export const { useGetMediaMutation, useGetSelectedMediaMutation, useResetMediaMutation } = mediaApi

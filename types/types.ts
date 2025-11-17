@@ -99,3 +99,23 @@ export interface filterInterface {
   order: 'ascending' | 'descending'
   sortDirectoryFirst: boolean
 }
+
+export type downloadType = 'direct' | 'stream' | 'default'
+
+export interface DownloadState {
+  progress: number; // 0 - 1
+  status: 'idle' | 'ongoing' | 'paused' | 'finished' | 'failed';
+  type: downloadType;
+  error?: string | null;
+  fileName?: string;
+}
+
+export interface DownloadManagerInterface {
+    id: string
+    filename: string
+    size: number
+    src: string
+    path: string
+    chunksize?: number
+    onProgress?: (downloaded: number, total: number) => void
+}

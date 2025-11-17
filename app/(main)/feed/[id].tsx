@@ -9,8 +9,6 @@ const MIN_SCALE = 1;
 
 export default function ViewScreen() {
   const baseUrl = useSelector((state: RootState) => state.baseurl.baseURL);
-  const selectedMediaStack = useSelector((state: RootState) => state.localRouter.selectedMediaStack);
-  const selectedItem = selectedMediaStack[selectedMediaStack.length - 1];
   const [scale, setScale] = useState(1);
   const [loading, setLoading] = useState(true);
 
@@ -28,36 +26,37 @@ export default function ViewScreen() {
     setLoading(false);
   };
 
-  if (!selectedItem) {
+  // if (!selectedItem) {
     return (
       <View className="flex-1 items-center justify-center bg-black">
-        <Text className="text-white text-lg">Item not found</Text>
+        <Text className="text-white text-lg">Feeds Screen not Implemented Yet</Text>
+        {/* <Text className="text-white text-lg">Item not found</Text> */}
       </View>
     );
-  }
+  // }
 
-  const { name, url } = selectedItem;
+  // const { name, url } = selectedItem;
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <PinchGestureHandler onGestureEvent={onPinchEvent}>
-        <View className="flex-1 bg-black relative">
-          <View className="absolute w-full top-0 p-4">
-            <Text className="text-white text-lg font-semibold">{name}</Text>
-          </View>
-          {loading && (
-            <ActivityIndicator size="large" color="#fff" style={{ position: 'absolute', top: '50%', left: '50%' }} />
-          )}
-          <Image
-            source={{ uri: baseUrl + url }}
-            className="flex-1 w-full"
-            resizeMode="contain"
-            style={{ transform: [{ scale }] }}
-            onLoad={handleImageLoad}
-            accessibilityLabel={name}
-          />
-        </View>
-      </PinchGestureHandler>
-    </GestureHandlerRootView>
-  );
+  // return (
+  //   <GestureHandlerRootView style={{ flex: 1 }}>
+  //     <PinchGestureHandler onGestureEvent={onPinchEvent}>
+  //       <View className="flex-1 bg-black relative">
+  //         <View className="absolute w-full top-0 p-4">
+  //           <Text className="text-white text-lg font-semibold">{name}</Text>
+  //         </View>
+  //         {loading && (
+  //           <ActivityIndicator size="large" color="#fff" style={{ position: 'absolute', top: '50%', left: '50%' }} />
+  //         )}
+  //         <Image
+  //           source={{ uri: baseUrl + url }}
+  //           className="flex-1 w-full"
+  //           resizeMode="contain"
+  //           style={{ transform: [{ scale }] }}
+  //           onLoad={handleImageLoad}
+  //           accessibilityLabel={name}
+  //         />
+  //       </View>
+  //     </PinchGestureHandler>
+  //   </GestureHandlerRootView>
+  // );
 }

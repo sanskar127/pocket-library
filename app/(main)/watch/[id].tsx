@@ -3,22 +3,41 @@ import { RenderItemInterface, VideoInterface } from '@/types/types';
 // import { useEvent } from 'expo';
 import Video from '@/components/common/Video';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { StyleSheet, View, Dimensions, Platform, Text, FlatList, ActivityIndicator, StatusBar, Pressable } from 'react-native';
+import { StyleSheet, View, Dimensions, Platform, Text, FlatList, ActivityIndicator, StatusBar } from 'react-native';
 import { useSelector } from 'react-redux';
 import useFetchMedia from '@/hooks/useFetchMedia';
 import { formatRelativeTime, formatSize } from '@/utils/utils';
+import { useEffect, useState } from 'react';
+import { useGetSelectedMediaMutation } from '@/api/mediaApi';
+import { useLocalSearchParams } from 'expo-router';
+import Download from '@/components/ui/Download';
 
 const { width: deviceWidth } = Dimensions.get('window');
 
 export default function WatchScreen() {
-  const selectedMediaStack = useSelector((state: RootState) => state.localRouter.selectedMediaStack)
-  const selectedMedia = selectedMediaStack[selectedMediaStack.length - 1]
-  const baseURL = useSelector((state: RootState) => state.baseurl.baseURL)
+  const [getSelectedMedia] = useGetSelectedMediaMutation()
   const { data, isLoading, updateOffset, isError } = useFetchMedia();
+  const [selectedMedia, setSelectedMedia] = useState<VideoInterface | null>(null)
+  const baseURL = useSelector((state: RootState) => state.baseurl.baseURL)
+  const routeHistory = useSelector((state: RootState) => state.localRouter.history)
+  const { id } = useLocalSearchParams() as { id: string }
+  const pathname = routeHistory.join('/')
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await getSelectedMedia({ id, pathname }).unwrap()
+        setSelectedMedia(response.data)
+      } catch (error) {
+        console.error('Failed to fetch media:', error)
+      }
+    })()
+  }, [getSelectedMedia, id, pathname])
+
+  const url = baseURL + selectedMedia?.url
 
   const renderItem: RenderItemInterface = ({ item }) => {
     if (item.type.startsWith('video/') && item.id !== selectedMedia?.id) return <Video details={item as VideoInterface} />
-
     return null;
   };
 
@@ -40,7 +59,7 @@ export default function WatchScreen() {
     ) : null)
   )
 
-  const player = useVideoPlayer((baseURL + selectedMedia?.url), player => {
+  const player = useVideoPlayer(url, player => {
     player.loop = true;
     player.play();
   });
@@ -62,11 +81,11 @@ export default function WatchScreen() {
           <Text className="text-gray-400 text-sm">
             {formatRelativeTime(selectedMedia?.modifiedAt)} • {selectedMedia?.type}
           </Text>
-          <Pressable className="mt-2 bg-primary px-4 py-2 rounded-sm w-fit self-start">
+          <Download entry={{ ...selectedMedia as VideoInterface, url }}>
             <Text className="text-white text-sm font-medium">
               Download ({formatSize(selectedMedia?.size)})
             </Text>
-          </Pressable>
+          </Download>
         </View>
       </View>
 

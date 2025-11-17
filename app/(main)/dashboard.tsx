@@ -26,7 +26,7 @@ export default function HomeScreen() {
     return null;
   };
 
-  // const handlePressable = () => bottomSheetRef.current?.expand();
+  const handlePressable = () => bottomSheetRef.current?.expand();
 
   const handleSheetChanges = (index: number) => {
     console.log('Sheet changed to index:', index);
@@ -50,7 +50,7 @@ export default function HomeScreen() {
         renderItem={renderItem}
         ListHeaderComponent={
           <View>
-            <Pressable>
+            <Pressable onPress={handlePressable}>
               <Text>
                 <Ionicons name="funnel" size={13} color="currentColor" /> Filter
               </Text>
@@ -70,7 +70,7 @@ export default function HomeScreen() {
       />
 
       {/* BottomSheet for Filters */}
-      {/* <BottomSheet ref={bottomSheetRef} snapPoints={snapPoints} onChange={handleSheetChanges}>
+      <BottomSheet ref={bottomSheetRef} snapPoints={snapPoints} onChange={handleSheetChanges}>
         <BottomSheetView>
           <View>
             <Text>Choose Type:</Text>
@@ -116,7 +116,7 @@ export default function HomeScreen() {
             <Text>Apply Filter</Text>
           </Pressable>
         </BottomSheetView>
-      </BottomSheet> */}
+      </BottomSheet>
     </GestureHandlerRootView>
   );
 }

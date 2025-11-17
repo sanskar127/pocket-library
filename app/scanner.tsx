@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Button, Dimensions, Text, Vibration, View } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import { useHistoryStorage } from '@/hooks/useHistoryStorage';
@@ -16,6 +16,10 @@ export default function Scanner() {
   const { addHistoryEntry } = useHistoryStorage();
 
   const { width, height } = Dimensions.get('window');
+  
+    useEffect(() => {
+      if (!permission?.granted) requestPermission()
+    }, [permission, requestPermission])
 
   if (!permission) {
     return <View />;

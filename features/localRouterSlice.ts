@@ -3,32 +3,29 @@ import { ImageInterface, VideoInterface } from "@/types/types"
 
 interface LocalRouterState {
   history: string[],
-  selectedMediaStack: (VideoInterface | ImageInterface)[]
+  feed: VideoInterface | ImageInterface | null
 }
 
 const initialState: LocalRouterState = {
   history: [],
-  selectedMediaStack: []
+  feed: null
 }
 
 const localRouterSlice = createSlice({
   name: 'localRouter',
   initialState,
   reducers: {
-    addRouteToHistory: (state, { payload }: PayloadAction<string>) => {
-      state.history.push(payload)
+    addRouteToHistory: (state, action: PayloadAction<string>) => {
+      state.history.push(action.payload)
     },
     removeLastRoute: (state) => {
       state.history.pop()
     },
-    pushSelectedMedia: (state, action: PayloadAction<VideoInterface | ImageInterface>) => {
-      state.selectedMediaStack.push(action.payload)
-    },
-    popSelectedMedia: (state) => {
-      state.selectedMediaStack.pop()
+    setFeed: (state, action: PayloadAction<VideoInterface | ImageInterface>) => {
+      state.feed = action.payload
     }
   }
 })
 
-export const { addRouteToHistory, removeLastRoute, pushSelectedMedia, popSelectedMedia } = localRouterSlice.actions
+export const { addRouteToHistory, removeLastRoute, setFeed } = localRouterSlice.actions
 export default localRouterSlice.reducer

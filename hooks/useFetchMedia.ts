@@ -10,8 +10,8 @@ const useFetchMedia = () => {
   const [data, setData] = useState<ItemType[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [filter, setFilter] = useState<filterInterface>({
-    type: 'name',
-    order: 'ascending',
+    type: 'date',
+    order: 'descending',
     sortDirectoryFirst: true
   })
   const [offset, setOffset] = useState(0)

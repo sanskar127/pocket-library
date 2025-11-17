@@ -8,15 +8,14 @@ export default function TabLayout() {
         <Tabs
             screenOptions={{
                 tabBarStyle: {
-                    backgroundColor: '#1e1e1e',  // Dark background for tab bar
-                    borderTopWidth: 2,           // Border on top for separation
+                    backgroundColor: '#000000',  // Dark background for tab bar
                     borderTopColor: '#444',      // Lighter border for better contrast
                     paddingTop: 10,              // Increased padding for better alignment
                     paddingBottom: 10,           // Added padding for better spacing
                 },
                 headerStyle: {
-                    backgroundColor: '#1e1e1e', // Match tab bar background color
-                    elevation: 4,                // Subtle shadow for header
+                    backgroundColor: '#000000', // Match tab bar background color
+                    // elevation: 4,                // Subtle shadow for header
                 },
                 sceneStyle: { backgroundColor: '#000000' },
                 headerTitle: 'Pocket Library', // Title in the header
@@ -25,9 +24,7 @@ export default function TabLayout() {
                     fontSize: 20,                // A bit larger font size for the title
                     fontWeight: 'medium',          // Make the title bold
                 },
-                headerRight: () => (
-                    <SearchButton color={"gray"} />
-                ),
+                headerRight: () => <SearchButton />,
                 tabBarShowLabel: false,           // Hide labels on tabs
                 tabBarActiveTintColor: '#fff',   // White color for active tab icon
                 tabBarInactiveTintColor: '#888', // Lighter color for inactive tab icon
@@ -37,7 +34,7 @@ export default function TabLayout() {
                 name="dashboard"
                 options={{
                     title: "Home",
-                    tabBarIcon: ({ color }) => <Ionicons name="home" size={28} color={color} />
+                    tabBarIcon: ({ color }) => <Ionicons name="home-outline" size={22} color={color} />
                 }}
             />
             <Tabs.Screen
@@ -45,14 +42,21 @@ export default function TabLayout() {
                 options={{
                     headerShown: false,
                     title: "Feed",
-                    tabBarIcon: ({ color }) => <Ionicons name="image" size={28} color={color} />
+                    tabBarIcon: ({ color }) => <Ionicons name="image-outline" size={22} color={color} />
+                }}
+            />
+            <Tabs.Screen
+                name="downloads"
+                options={{
+                    title: "Downloads",
+                    tabBarIcon: ({ color }) => <Ionicons name="cloud-download-outline" size={22} color={color} />
                 }}
             />
             <Tabs.Screen
                 name="settings"
                 options={{
                     title: "Settings",
-                    tabBarIcon: ({ color }) => <Ionicons name="settings" size={28} color={color} />
+                    tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={22} color={color} />
                 }}
             />
 

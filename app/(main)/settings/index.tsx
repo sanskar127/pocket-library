@@ -1,95 +1,122 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollView, Text, View, Switch, useColorScheme, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useDispatch } from 'react-redux';
-import { setIsEnableDirect } from '@/features/lockSlice';
-// import { RootState } from '@/store/store';
+import { ScrollView, Text, View, TouchableOpacity } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { useState } from 'react'
+import Switch from '@/components/ui/Switch'
 
-const SettingsScreen = () => {
-  const [toggleLock, setToggleLock] = useState<boolean>(false);
-  // const isAvailable = useSelector((state: RootState) => state.lock.isAvailable);
-  const dispatch = useDispatch();
-  const colorScheme = useColorScheme(); // Detects whether the system is in dark or light mode
+type SettingItem =
+  | {
+    title: string
+    subtitle: string
+    onPress: () => void
+  }
+  | {
+    title: string
+    subtitle: string
+    isSwitch: true
+    value: boolean
+    onValueChange: () => void
+  }
 
-  // Fetch initial value from AsyncStorage on component mount
-  useEffect(() => {
-    const fetchLockState = async () => {
-      try {
-        const value = await AsyncStorage.getItem('isEnable');
-        if (value === 'true') {
-          setToggleLock(true);
-        } else {
-          setToggleLock(false);
-        }
-      } catch (e) {
-        console.error('Failed to load data', e);
-      }
-    };
+// Type guard to help TypeScript distinguish switch items
+const isSwitchItem = (item: SettingItem): item is Extract<SettingItem, { isSwitch: true }> => 'isSwitch' in item
 
-    fetchLockState();
-  }, []);
+const Index = () => {
+  const [offline, setOffline] = useState(false)  // Temp Toggle placeholder, Feature implments in future
 
-  // Handle toggle switch action
-  const handleToggle = async (value: boolean) => {
-    try {
-      if (value) {
-        await AsyncStorage.setItem('isEnable', 'true');
-      } else {
-        await AsyncStorage.setItem('isEnable', 'false');
-      }
-      
-      // Dispatch the change to Redux store
-      dispatch(setIsEnableDirect(value));
-    } catch (e) {
-      console.error('Failed to save data', e);
-    }
-    
-    setToggleLock(value); // Update local state
-  };
+  const settingsCategories: { title: string; data: SettingItem[] }[] = [
+    {
+      title: 'General',
+      data: [
+        {
+          title: 'Change Origin',
+          subtitle: 'Select your content origin',
+          onPress: () => console.log('Navigate to Change Origin'),
+        },
+        {
+          title: 'Your Library',
+          subtitle: 'Manage your media library',
+          onPress: () => console.log('Navigate to Library'),
+        },
+        {
+          title: 'Manage Search History',
+          subtitle: 'Clear or manage search data',
+          onPress: () => console.log('Navigate to Search History'),
+        },
+      ],
+    },
+    {
+      title: 'Offline',
+      data: [
+        {
+          title: 'Go Offline',
+          subtitle: 'Enable offline mode',
+          isSwitch: true,
+          value: offline,
+          onValueChange: () => setOffline(prev => !prev),
+        },
+      ],
+    },
+    {
+      title: 'Security & Maintenance',
+      data: [
+        {
+          title: 'Refresh Backend Feed',
+          subtitle: 'Clear cached feed and fetch latest data',
 
-  // Define the dynamic styles based on the color scheme
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      padding: 16,
+          onPress: () => console.log('Navigate to Refresh Backend Feed'),
+        },
+        {
+          title: 'Manage App Lock',
+          subtitle: 'Secure your app with a lock',
+
+          onPress: () => console.log('Navigate to App Lock'),
+        },
+      ],
     },
-    header: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: colorScheme === 'dark' ? '#FFFFFF' : '#000000', // Adjust text color for dark mode
-      marginBottom: 16,
-    },
-    description: {
-      fontSize: 16,
-      color: colorScheme === 'dark' ? '#B0B0B0' : '#555555', // Lighter text color for dark mode
-      marginBottom: 8,
-    },
-    switchContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    switchLabel: {
-      fontSize: 16,
-      color: colorScheme === 'dark' ? '#FFFFFF' : '#000000', // Adjust text color for dark mode
-    },
-  });
+  ]
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Security Settings</Text>
-      <View style={styles.switchContainer}>
-        <Text style={styles.switchLabel}>Toggle to Enable/Disable App Lock</Text>
-        <Switch
-          value={toggleLock}
-          // disabled={isAvailable}
-          onValueChange={handleToggle}
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={toggleLock ? '#f5dd4b' : '#f4f3f4'}
-        />
+    <ScrollView className="p-4 bg-black">
+      <Text className="text-lg font-medium text-white mb-4">Settings</Text>
+
+      <View className="space-y-6">
+        {settingsCategories.map((category, catIndex) => (
+          <View key={catIndex}>
+            <Text className="text-gray-400 font-semibold mb-2">{category.title}</Text>
+
+            <View className="space-y-4">
+              {category.data.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={!isSwitchItem(item) ? item.onPress : undefined}
+                  activeOpacity={isSwitchItem(item) ? 1 : 0.7}
+                  className="flex-row justify-between items-center p-4 rounded-lg"
+                >
+                  <View className="flex-1">
+                    <Text className="text-white font-medium">{item.title}</Text>
+                    <Text className="text-gray-400 text-sm">{item.subtitle}</Text>
+                  </View>
+
+                  {isSwitchItem(item) ? (
+                    <Switch value={item.value} onValueChange={item.onValueChange} />
+                  ) : (
+                    <Ionicons name='chevron-forward' size={20} color="white" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ))}
       </View>
     </ScrollView>
-  );
-};
+  )
+}
 
-export default SettingsScreen;
+export default Index
+
+{/* Change Origin - Origin Screen */ }
+{/* Go Offline - Toggle */ }
+{/* Your Library - Library Screen */ }
+{/* Search History - search history page */ }
+{/* Refresh Backend Cache - Dialog */ }
+{/* Manage App Lock - Lock Setting Page */ }
