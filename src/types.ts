@@ -42,7 +42,7 @@ export interface ScanImagesInterface {
 
 type DeviceType = "mobile" | "tablet" | "laptop" | "desktop"
 
-interface sortInterface {
+export interface sortInterface {
   type: 'name' | 'date' | 'size' 
   order: 'ascending' | 'descending'
   sortDirectoryFirst: boolean

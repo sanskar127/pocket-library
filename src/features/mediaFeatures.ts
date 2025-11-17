@@ -1,9 +1,9 @@
 import path, { relative, basename, extname, join, resolve, dirname } from "path";
 import { readdir, stat } from 'fs/promises'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
-import { thumbnailsDir, imageFormats, media, videoFormats, mediaDir } from "../states";
-import { generateShortId, generateThumbnail, sanitizeFileName, thumbnailExistsAndValid } from "../utils";
-import { ChunkInterface, ScanImagesInterface, ScanVideosInterface, VideoInterface, VideoMetadata } from "../types";
+import { thumbnailsDir, imageFormats, media, videoFormats, mediaDir, setMedia } from "../states";
+import { generateShortId, generateThumbnail, sanitizeFileName, thumbnailExistsAndValid, writeCacheData } from "../utils";
+import { ChunkInterface, DirectoryInterface, ImageExtension, ItemType, ScanImagesInterface, ScanVideosInterface, VideoExtension, VideoInterface, VideoMetadata, sortInterface } from "../types";
 import Ffmpeg from "fluent-ffmpeg";
 
 // Retrieve video details and create a response object for a video file
@@ -222,3 +222,98 @@ export const transcodingHLS = async (videoFile: string, outputDir: string): Prom
     }
   }
 };
+
+export const fetchMediaEntries = async (pathname: string): Promise<void> => {
+  const items = await readdir(pathname);
+  const entries = await Promise.all(items.map(async item => {
+    try {
+      const filePath = path.join(pathname, item);
+      if (!await mediaChecker(filePath)) {
+        return null;  // Skip non-media files
+      }
+
+      const currentPath = path.join(pathname, item);
+      const stats = await stat(currentPath);
+
+      if (stats.isDirectory()) {
+        const name = path.basename(currentPath);
+        return {
+          id: generateShortId(path.relative(mediaDir, pathname) + stats.mtimeMs),
+          name,
+          size: -1,
+          type: 'directory',
+          modifiedAt: stats.mtime,
+          url: name,
+        } as DirectoryInterface;
+      }
+
+      const extname = path.extname(item).toLowerCase() as VideoExtension;
+
+      if (videoFormats.hasOwnProperty(extname)) {
+        try {
+          return await scanVideos(currentPath, extname);
+        } catch (videoError) {
+          console.error(`Error scanning video at ${currentPath}:`, videoError);
+          return { error: "Failed to process video" }; // Fallback return
+        }
+      }
+
+      if (imageFormats.hasOwnProperty(extname)) {
+        try {
+          return await scanImages(currentPath, extname as ImageExtension);
+        } catch (imageError) {
+          console.error(`Error scanning image at ${currentPath}:`, imageError);
+          return { error: "Failed to process image" }; // Fallback return
+        }
+      }
+
+      return null;  // No match for video or image formats
+    } catch (error) {
+      console.error(`Error processing file ${item}:`, error);
+      return { error: "Failed to process file" }; // Fallback return
+    }
+  })).then(entries => entries.filter(item => item !== null)) as ItemType[];
+
+  setMedia({ [pathname]: entries })
+  writeCacheData()
+}
+
+// Sorting logic for media
+export const handleSort = (pathname: string, sorting: sortInterface) => {
+  setMedia({
+    [pathname]: media[pathname].sort((a, b) => {
+      // First, check if sortDirectoryFirst is set
+      if (sorting.sortDirectoryFirst) {
+        // Directories first, files later
+        if (a.type === 'directory' && b.type !== 'directory') return -1; // a is a directory, b is a file
+        if (a.type !== 'directory' && b.type === 'directory') return 1;  // b is a directory, a is a file
+      } else {
+        // If sortDirectoryFirst is false, we want files first (default)
+        if (a.type === 'directory' && b.type !== 'directory') return 1; // a is a directory, b is a file
+        if (a.type !== 'directory' && b.type === 'directory') return -1; // b is a directory, a is a file
+      }
+
+      // Now apply sorting based on the requested type (name, date, size)
+      const compare = (field: keyof ItemType) => {
+        const valA = a[field];
+        const valB = b[field];
+        if (sorting.order === 'ascending') {
+          return valA < valB ? -1 : valA > valB ? 1 : 0;
+        } else {
+          return valA > valB ? -1 : valA < valB ? 1 : 0;
+        }
+      };
+
+      switch (sorting.type) {
+        case 'name':
+          return compare('name');
+        case 'date':
+          return compare('modifiedAt');
+        case 'size':
+          return compare('size');
+        default:
+          return 0;
+      }
+    })
+  });
+}

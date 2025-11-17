@@ -1,4 +1,4 @@
-import { mediaController, streamingController } from './controllers/mediaController';
+import { selectedMediaController, mediaController, resetMediaController, streamingController } from './controllers/mediaController';
 import { cacheDir, thumbnailsDir, mediaDir, cachingFile, setMedia } from './states';
 import { generateQrCode, getLocalIPAddress, writeCacheData } from './utils';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
@@ -14,6 +14,8 @@ app.use(express.json());
 app.use(cors());
 
 app.post('/api/media', mediaController);
+app.post('/api/media/:id', selectedMediaController);
+app.delete('/api/media/reset', resetMediaController);
 app.post('/api/playback', streamingController);
 
 app.get('/owner', (_, response: Response) => response.json({
@@ -25,7 +27,7 @@ app.use('/', express.static(__dirname));
 app.use('/media', express.static(mediaDir));
 app.use('/thumbnails', express.static(thumbnailsDir));
 
-const server = app.listen(port, async () => {
+app.listen(port, async () => {
     // Create cache dir if missing
     if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
 
@@ -54,17 +56,3 @@ const server = app.listen(port, async () => {
         process.exit(1);
     }
 });
-
-// Graceful shutdown logic
-const shutdown = () => {
-    writeCacheData();
-    server.close(() => {
-        process.exit(0);  // Gracefully exit the process
-    });
-};
-
-// Handle shutdown signal (Ctrl + C)
-process.on('SIGINT', shutdown);
-
-// Handle termination signal
-process.on('SIGTERM', shutdown);

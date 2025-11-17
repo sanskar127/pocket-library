@@ -20,26 +20,27 @@ export function setChunkedData(data: string[] | null) {
 }
 
 export const videoFormats: Record<VideoExtension, string> = {
-  ".mp4": "video/mp4",
-  ".mov": "video/quicktime",
-  ".avi": "video/avi",
-  ".mkv": "video/x-matroska",
-  ".wmv": "video/x-ms-wmv",
-  ".flv": "video/x-flv",
-  ".f4v": "video/mp4",
-  ".webm": "video/webm",
-  ".mpeg": "video/mpeg",
-  ".mpg": "video/mpeg",
+  ".mp4": "video/mp4",                  // MP4 Video (Standard)
+  ".mov": "video/quicktime",            // MOV Video (QuickTime format)
+  ".avi": "video/x-msvideo",            // AVI Video (Microsoft's format)
+  ".mkv": "video/x-matroska",           // MKV Video (Matroska format)
+  ".wmv": "video/x-ms-wmv",             // WMV Video (Windows Media Video)
+  ".flv": "video/x-flv",                // FLV Video (Flash Video)
+  ".f4v": "video/mp4",                  // F4V (Flash MP4)
+  ".webm": "video/webm",                // WebM (Open-source video format)
+  ".mpeg": "video/mpeg",                // MPEG Video (Moving Picture Experts Group)
+  ".mpg": "video/mpeg",                 // MPG Video (MPEG format)
 };
 
+
 export const imageFormats: Record<ImageExtension, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".bmp": "image/bmp",
-  ".tiff": "image/tiff",
-  ".tif": "image/tiff",
-  ".svg": "image/svg+xml"
+  ".jpg": "image/jpeg",       // JPEG image (common format for photos)
+  ".jpeg": "image/jpeg",      // JPEG image (same as .jpg)
+  ".png": "image/png",        // PNG image (supports transparency)
+  ".gif": "image/gif",        // GIF image (supports animation)
+  ".webp": "image/webp",      // WebP image (modern image format for the web)
+  ".bmp": "image/bmp",        // BMP image (Bitmap, often uncompressed)
+  ".tiff": "image/tiff",      // TIFF image (high-quality image format)
+  ".tif": "image/tiff",       // TIFF image (same as .tiff)
+  ".svg": "image/svg+xml",    // SVG image (Scalable Vector Graphics)
 };

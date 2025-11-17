@@ -1,9 +1,9 @@
-import { getChunk, mediaChecker, scanImages, scanVideos, transcodingHLS, validateLimit } from "../features/mediaFeatures";
+import { fetchMediaEntries, getChunk, handleSort, mediaChecker, scanImages, scanVideos, transcodingHLS, validateLimit } from "../features/mediaFeatures";
 import { DirectoryInterface, ImageExtension, requestBodyInterface, ItemType, VideoExtension } from "../types";
 import { mediaDir, playbackDir, videoFormats, imageFormats, media, setMedia } from '../states';
 import { Request, Response } from "express";
 import { existsSync, readdirSync } from 'fs';
-import { generateShortId } from "../utils";
+import { generateShortId, writeCacheData } from "../utils";
 import fs from 'fs/promises'
 import path from 'path';
 
@@ -28,97 +28,10 @@ export const mediaController = async (request: Request, response: Response) => {
     if (!existsSync(safePath)) return response.status(404).json({ error: "Directory not found" });
 
     try {
-        if (!(pathname in media)) {
-            const items = await fs.readdir(navigationPath);
-            const entries = await Promise.all(items.map(async item => {
-                try {
-                    const filePath = path.join(navigationPath, item);
-                    if (!await mediaChecker(filePath)) {
-                        return null;  // Skip non-media files
-                    }
+        if (!(pathname in media)) fetchMediaEntries(navigationPath)
 
-                    const currentPath = path.join(navigationPath, item);
-                    const stats = await fs.stat(currentPath);
-
-                    if (stats.isDirectory()) {
-                        const name = path.basename(currentPath);
-                        return {
-                            id: generateShortId(path.relative(mediaDir, navigationPath) + stats.mtimeMs),
-                            name,
-                            size: -1,
-                            type: 'directory',
-                            modifiedAt: stats.mtime,
-                            url: name,
-                        } as DirectoryInterface;
-                    }
-
-                    const extname = path.extname(item).toLowerCase() as VideoExtension;
-
-                    if (videoFormats.hasOwnProperty(extname)) {
-                        try {
-                            return await scanVideos(currentPath, extname);
-                        } catch (videoError) {
-                            console.error(`Error scanning video at ${currentPath}:`, videoError);
-                            return { error: "Failed to process video" }; // Fallback return
-                        }
-                    }
-
-                    if (imageFormats.hasOwnProperty(extname)) {
-                        try {
-                            return await scanImages(currentPath, extname as ImageExtension);
-                        } catch (imageError) {
-                            console.error(`Error scanning image at ${currentPath}:`, imageError);
-                            return { error: "Failed to process image" }; // Fallback return
-                        }
-                    }
-
-                    return null;  // No match for video or image formats
-                } catch (error) {
-                    console.error(`Error processing file ${item}:`, error);
-                    return { error: "Failed to process file" }; // Fallback return
-                }
-            })).then(entries => entries.filter(item => item !== null)) as ItemType[];
-
-            setMedia({ [pathname]: entries })
-        }
-
-        // Sorting logic for media
-        setMedia({
-            [pathname]: media[pathname].sort((a, b) => {
-                // First, check if sortDirectoryFirst is set
-                if (sorting.sortDirectoryFirst) {
-                    // Directories first, files later
-                    if (a.type === 'directory' && b.type !== 'directory') return -1; // a is a directory, b is a file
-                    if (a.type !== 'directory' && b.type === 'directory') return 1;  // b is a directory, a is a file
-                } else {
-                    // If sortDirectoryFirst is false, we want files first (default)
-                    if (a.type === 'directory' && b.type !== 'directory') return 1; // a is a directory, b is a file
-                    if (a.type !== 'directory' && b.type === 'directory') return -1; // b is a directory, a is a file
-                }
-
-                // Now apply sorting based on the requested type (name, date, size)
-                const compare = (field: keyof ItemType) => {
-                    const valA = a[field];
-                    const valB = b[field];
-                    if (sorting.order === 'ascending') {
-                        return valA < valB ? -1 : valA > valB ? 1 : 0;
-                    } else {
-                        return valA > valB ? -1 : valA < valB ? 1 : 0;
-                    }
-                };
-
-                switch (sorting.type) {
-                    case 'name':
-                        return compare('name');
-                    case 'date':
-                        return compare('modifiedAt');
-                    case 'size':
-                        return compare('size');
-                    default:
-                        return 0;
-                }
-            })
-        });
+        // Handle Sorting
+        handleSort(pathname, sorting)
 
         const { data, hasMore } = await getChunk(pathname, limit, offset);
         response.status(200).json({ data, hasMore });
@@ -126,6 +39,44 @@ export const mediaController = async (request: Request, response: Response) => {
         console.error(`Error scanning directory ${navigationPath}:`, error);
         response.status(500).json({ error: 'Internal Server Error' });
     }
+}
+
+export const selectedMediaController = async (request: Request, response: Response) => {
+    try {
+        // Destructure id and pathname from the request body
+        const { pathname }: { pathname: string } = request.body;
+        const { id } = request.params
+
+        // Check if id and pathname are provided
+        if (!id || pathname === undefined) {
+            return response.status(400).json({ error: 'Both id and pathname are required' });
+        }
+
+        // Check if the pathname exists in the media object
+        const selectedPath = media[pathname];
+        if (!selectedPath) {
+            return response.status(404).json({ error: `Pathname '${pathname}' not found` });
+        }
+
+        // Find the media item by id
+        const data = selectedPath.find(item => item.id === id);
+        if (!data) {
+            return response.status(404).json({ error: `Media with id '${id}' not found in '${pathname}'` });
+        }
+
+        // Send the response with the found data
+        return response.status(200).json({ data });
+    } catch (error) {
+        // General error handling
+        console.error('Error in selectedMediaController:', error);
+        return response.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const resetMediaController = async (_: unknown, response: Response) => {
+    setMedia({})
+    writeCacheData()
+    response.status(200).json({message: "Media Reset Successfully!"})
 }
 
 export const streamingController = async (request: Request, response: Response) => {
