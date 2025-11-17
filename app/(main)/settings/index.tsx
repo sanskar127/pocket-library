@@ -77,7 +77,7 @@ const Index = () => {
 
   return (
     <ScrollView className="p-4 bg-black">
-      <Text className="text-lg font-medium text-white mb-4">Settings</Text>
+      <Text className="text-3xl font-medium text-white mb-4">Settings</Text>
 
       <View className="space-y-6">
         {settingsCategories.map((category, catIndex) => (

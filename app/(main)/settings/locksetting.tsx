@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, Text, View, Switch, useColorScheme, StyleSheet } from 'react-native';
+import { ScrollView, Text, View, useColorScheme, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch } from 'react-redux';
 import { setIsEnableDirect } from '@/features/lockSlice';
+import Switch from '@/components/ui/Switch';
 // import { RootState } from '@/store/store';
 
 const LockSettingScreen = () => {
@@ -84,8 +85,6 @@ const LockSettingScreen = () => {
           value={toggleLock}
           // disabled={isAvailable}
           onValueChange={handleToggle}
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={toggleLock ? '#f5dd4b' : '#f4f3f4'}
         />
       </View>
     </ScrollView>

@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TouchableWithoutFeedback, Animated } from 'react-native';
 
-interface CustomSwitchProps {
+interface SwitchProps {
   value: boolean;
   onValueChange: (val: boolean) => void;
 }
 
-const CustomSwitch: React.FC<CustomSwitchProps> = ({ value, onValueChange }) => {
+const Switch: React.FC<SwitchProps> = ({ value, onValueChange }) => {
   const [switchValue, setSwitchValue] = useState<boolean>(value);
   const animation = useRef(new Animated.Value(value ? 1 : 0)).current;
 
@@ -25,7 +25,7 @@ const CustomSwitch: React.FC<CustomSwitchProps> = ({ value, onValueChange }) => 
 
   const trackColor = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#000000', '#ffffff'], // grayscale track
+    outputRange: ['#00000000', '#ffffff'], // grayscale track
   });
 
   const thumbColor = animation.interpolate({
@@ -35,7 +35,7 @@ const CustomSwitch: React.FC<CustomSwitchProps> = ({ value, onValueChange }) => 
 
   const translateX = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 14], // adjusted thumb slide distance
+    outputRange: [2, 16], // adjusted thumb slide distance
   });
 
   return (
@@ -45,7 +45,7 @@ const CustomSwitch: React.FC<CustomSwitchProps> = ({ value, onValueChange }) => 
         style={{ backgroundColor: trackColor }}
       >
         <Animated.View
-          className="w-5 h-5 rounded-full" // slightly bigger thumb
+          className="w-4 h-4 rounded-full" // slightly bigger thumb
           style={{ backgroundColor: thumbColor, transform: [{ translateX }] }}
         />
       </Animated.View>
@@ -53,4 +53,4 @@ const CustomSwitch: React.FC<CustomSwitchProps> = ({ value, onValueChange }) => 
   );
 };
 
-export default CustomSwitch;
+export default Switch;

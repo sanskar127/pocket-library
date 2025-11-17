@@ -1,71 +1,71 @@
 import { useGetMediaMutation } from '@/api/mediaApi'
 import { RootState } from '@/store/store'
 import { useCallback, useEffect, useState } from 'react'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { filterInterface, ItemType } from '@/types/types'
+import { ItemType } from '@/types/types'
+import { setFilter } from '@/features/filterSlice'
+
+const LIMIT = 7
+const FILTER_KEY = 'filter'
 
 const useFetchMedia = () => {
   const [getMedia, { isLoading, isError }] = useGetMediaMutation()
   const [data, setData] = useState<ItemType[]>([])
   const [hasMore, setHasMore] = useState(false)
-  const [filter, setFilter] = useState<filterInterface>({
-    type: 'date',
-    order: 'descending',
-    sortDirectoryFirst: true
-  })
   const [offset, setOffset] = useState(0)
   const [isRefreshing, setRefreshing] = useState(false)
-
-  const LIMIT = 7
-  const FILTER_KEY = 'filter'
+  const dispatch = useDispatch()
 
   const routeHistory = useSelector((state: RootState) => state.localRouter.history)
+  const filter = useSelector((state: RootState) => state.filter)
   const pathname = routeHistory.join('/')
 
-  // Update offset for pagination
+  // Pagination helper
   const updateOffset = () => {
     if (hasMore) setOffset(prev => prev + LIMIT)
   }
 
-  // Reset data on pathname or filter change
+  // Initialize or sync filter from AsyncStorage
+  useEffect(() => {
+    const initFilter = async () => {
+      try {
+        const storedFilter = await AsyncStorage.getItem(FILTER_KEY)
+        if (storedFilter) {
+          dispatch(setFilter(JSON.parse(storedFilter)))
+        } else {
+          await AsyncStorage.setItem(FILTER_KEY, JSON.stringify(filter))
+        }
+      } catch (err) {
+        console.error('Failed to load filter:', err)
+      }
+    }
+    initFilter()
+  }, [dispatch, filter])
+
+  // Reset data when pathname or filter changes
   useEffect(() => {
     setData([])
     setHasMore(false)
     setOffset(0)
   }, [pathname, filter])
 
-  // Handling Filter/sorting
-  const handleFilter = useCallback(async () => {
-    try {
-      const storedFilter = await AsyncStorage.getItem(FILTER_KEY)
-      if (storedFilter === null) {
-        await AsyncStorage.setItem(FILTER_KEY, JSON.stringify(filter))
-      } else {
-        setFilter(JSON.parse(storedFilter))
-      }
-    } catch (error) {
-      console.error("Failed to Get Filter Data, ", error)
-    }
-  }, [filter])
-
-  // Fetch media data based on current filter and offset
+  // Fetch media data
   const fetchData = useCallback(async () => {
     try {
       const response = await getMedia({ pathname, offset, limit: LIMIT, sorting: filter }).unwrap()
       setData(prev => [...prev, ...response.data])
       setHasMore(response.hasMore)
-    } catch (error) {
-      console.error('Failed to fetch media:', error)
+    } catch (err) {
+      console.error('Failed to fetch media:', err)
     }
   }, [pathname, offset, filter, getMedia])
 
   useEffect(() => {
-    // Fetch data only when filter is stable and after offset changes
     fetchData()
-  }, [filter, offset, fetchData])
+  }, [fetchData])
 
-  // Handle refresh action
+  // Refresh handler
   const handleRefresh = async () => {
     setRefreshing(true)
     setData([])
@@ -79,9 +79,7 @@ const useFetchMedia = () => {
     data,
     isLoading,
     isError,
-    filter,
     isRefreshing,
-    setFilter,
     handleRefresh,
     updateOffset
   }

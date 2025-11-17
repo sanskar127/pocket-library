@@ -10,8 +10,8 @@ export default function TabLayout() {
                 tabBarStyle: {
                     backgroundColor: '#000000',  // Dark background for tab bar
                     borderTopColor: '#444',      // Lighter border for better contrast
-                    paddingTop: 10,              // Increased padding for better alignment
-                    paddingBottom: 10,           // Added padding for better spacing
+                    paddingTop: 3,              // Increased padding for better alignment
+                    paddingBottom: 3,           // Added padding for better spacing
                 },
                 headerStyle: {
                     backgroundColor: '#000000', // Match tab bar background color

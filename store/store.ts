@@ -4,15 +4,17 @@ import { mediaApi } from "@/api/mediaApi"
 import baseUrlReducer from "@/features/baseQuery"
 import localRouterReducer from "@/features/localRouterSlice"
 import lockReducer from "@/features/lockSlice"
+import filterReducer from "@/features/filterSlice"
 
 export const store = configureStore({
   reducer: {
     baseurl: baseUrlReducer,
     localRouter: localRouterReducer,
     lock: lockReducer,
+    filter: filterReducer,
     [mediaApi.reducerPath]: mediaApi.reducer
   },
-  middleware: getDefaultMiddleware => 
+  middleware: getDefaultMiddleware =>
     getDefaultMiddleware().concat(mediaApi.middleware)
 })
 
