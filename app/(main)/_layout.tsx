@@ -13,10 +13,7 @@ export default function TabLayout() {
                     paddingTop: 3,              // Increased padding for better alignment
                     paddingBottom: 3,           // Added padding for better spacing
                 },
-                headerStyle: {
-                    backgroundColor: '#000000', // Match tab bar background color
-                    // elevation: 4,                // Subtle shadow for header
-                },
+                headerStyle: { backgroundColor: '#000000' },
                 sceneStyle: { backgroundColor: '#000000' },
                 headerTitle: 'Pocket Library', // Title in the header
                 headerTitleStyle: {
@@ -56,6 +53,7 @@ export default function TabLayout() {
                 name="settings"
                 options={{
                     title: "Settings",
+                    headerShown: false,
                     tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={22} color={color} />
                 }}
             />

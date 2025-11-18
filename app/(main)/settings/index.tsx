@@ -2,6 +2,7 @@ import { ScrollView, Text, View, TouchableOpacity } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useState } from 'react'
 import Switch from '@/components/ui/Switch'
+import { useRouter } from 'expo-router'
 
 type SettingItem =
   | {
@@ -22,6 +23,7 @@ const isSwitchItem = (item: SettingItem): item is Extract<SettingItem, { isSwitc
 
 const Index = () => {
   const [offline, setOffline] = useState(false)  // Temp Toggle placeholder, Feature implments in future
+  const router = useRouter()
 
   const settingsCategories: { title: string; data: SettingItem[] }[] = [
     {
@@ -30,17 +32,17 @@ const Index = () => {
         {
           title: 'Change Origin',
           subtitle: 'Select your content origin',
-          onPress: () => console.log('Navigate to Change Origin'),
+          onPress: () => router.navigate('/'),
         },
         {
           title: 'Your Library',
           subtitle: 'Manage your media library',
-          onPress: () => console.log('Navigate to Library'),
+          onPress: () => router.push('/settings/library'),
         },
         {
           title: 'Manage Search History',
           subtitle: 'Clear or manage search data',
-          onPress: () => console.log('Navigate to Search History'),
+          onPress: () => router.push('/settings/history'),
         },
       ],
     },
@@ -60,16 +62,16 @@ const Index = () => {
       title: 'Security & Maintenance',
       data: [
         {
-          title: 'Refresh Backend Feed',
-          subtitle: 'Clear cached feed and fetch latest data',
+          title: 'Delete Cache',
+          subtitle: 'Clear metadata only, Clear complete data',
 
-          onPress: () => console.log('Navigate to Refresh Backend Feed'),
+          onPress: () => router.push('/settings/clearcache'),
         },
         {
           title: 'Manage App Lock',
           subtitle: 'Secure your app with a lock',
 
-          onPress: () => console.log('Navigate to App Lock'),
+          onPress: () => router.push('/settings/lock'),
         },
       ],
     },

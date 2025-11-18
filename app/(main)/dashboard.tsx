@@ -24,20 +24,6 @@ export default function HomeScreen() {
 
   const handleFilterPress = useCallback(() => filterSheetRef.current?.present(), [])
 
-  // const handleSheetChanges = (index: number) => {
-  //   console.log('Sheet changed to index:', index);
-  // };
-
-  // Handle changes in filter values
-  // const handleFilterChange = () => {
-  //   setFilter(newFilter);
-  //   bottomSheetRef.current?.close();  // Close the bottom sheet
-  // };
-
-  // useEffect(() => {
-  //   setNewFilter(filter);  // Ensure that newFilter syncs with the current filter
-  // }, [filter]);
-
   return (
     <FilterBottomSheet ref={filterSheetRef}>
       <FlatList
@@ -46,9 +32,8 @@ export default function HomeScreen() {
         renderItem={renderItem}
         ListHeaderComponent={
           <View className="flex flex-row items-center justify-end py-2 px-2">
-            <Pressable onPress={handleFilterPress} className="flex-row items-center gap-1 bg-white rounded-md p-4">
-              <Ionicons name="funnel-outline" size={22} color="black" />
-              {/* <Text className="text-white text-lg">Filter </Text> */}
+            <Pressable onPress={handleFilterPress} className="flex-row items-center gap-1 bg-white rounded-md p-3">
+              <Ionicons name="funnel-outline" size={20} color="black" />
             </Pressable>
           </View>
         }
