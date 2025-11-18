@@ -1,8 +1,8 @@
 import { selectedMediaController, mediaController, resetMediaController, streamingController } from './controllers/mediaController';
-import { cacheDir, thumbnailsDir, mediaDir, cachingFile, setMedia } from './states';
-import { generateQrCode, getLocalIPAddress, writeCacheData } from './utils';
-import { existsSync, mkdirSync, readFileSync } from 'fs';
+import { thumbnailsDir, mediaDir, cachingFile, setMedia } from './states';
+import { generateQrCode, getLocalIPAddress } from './utils';
 import express, { Express, Response } from 'express';
+import { existsSync, readFileSync } from 'fs';
 import { mediaInterface } from './types';
 import cors from 'cors';
 
@@ -28,9 +28,6 @@ app.use('/media', express.static(mediaDir));
 app.use('/thumbnails', express.static(thumbnailsDir));
 
 app.listen(port, async () => {
-    // Create cache dir if missing
-    if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
-
     const address = getLocalIPAddress();
     const url: string = `http://${address}:${port}`;
 

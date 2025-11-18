@@ -1,10 +1,9 @@
-import { fetchMediaEntries, getChunk, handleSort, mediaChecker, scanImages, scanVideos, transcodingHLS, validateLimit } from "../features/mediaFeatures";
-import { DirectoryInterface, ImageExtension, requestBodyInterface, ItemType, VideoExtension } from "../types";
-import { mediaDir, playbackDir, videoFormats, imageFormats, media, setMedia } from '../states';
+import { fetchMediaEntries, getChunk, handleSort, transcodingHLS, validateLimit } from "../features/mediaFeatures";
+import { mediaDir, playbackDir, media, setMedia, cacheDir } from '../states';
+import { existsSync, mkdirSync, readdirSync, rmSync } from 'fs';
+import { requestBodyInterface } from "../types";
 import { Request, Response } from "express";
-import { existsSync, readdirSync } from 'fs';
-import { generateShortId, writeCacheData } from "../utils";
-import fs from 'fs/promises'
+import { writeCacheData } from "../utils";
 import path from 'path';
 
 export const mediaController = async (request: Request, response: Response) => {
@@ -28,6 +27,9 @@ export const mediaController = async (request: Request, response: Response) => {
     if (!existsSync(safePath)) return response.status(404).json({ error: "Directory not found" });
 
     try {
+        // Create cache dir if missing
+        if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true })
+
         if (!(pathname in media)) fetchMediaEntries(navigationPath)
 
         // Handle Sorting
@@ -73,11 +75,31 @@ export const selectedMediaController = async (request: Request, response: Respon
     }
 };
 
-export const resetMediaController = async (_: unknown, response: Response) => {
-    setMedia({})
-    writeCacheData()
-    response.status(200).json({message: "Media Reset Successfully!"})
-}
+export const resetMediaController = (req: Request, res: Response) => {
+    try {
+        const option = req.query.option as 'metadata' | 'everything' | undefined;
+
+        // Validate query parameter
+        if (!option || (option !== 'metadata' && option !== 'everything')) {
+            return res.status(400).json({ message: 'Invalid option. Must be "metadata" or "everything".' });
+        }
+
+        // Clear media state
+        setMedia({});
+
+        // Delete cache depending on the option
+        if (option === 'metadata') {
+            writeCacheData(); // in case writeCacheData is async
+        } else {
+            rmSync(cacheDir, { recursive: true, force: true });
+        }
+
+        res.status(200).json({ message: 'Cache data deleted successfully!' });
+    } catch (error) {
+        console.error('Error deleting media cache:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
 export const streamingController = async (request: Request, response: Response) => {
     const { video }: { video: string } = request.body;
