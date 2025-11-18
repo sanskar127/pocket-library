@@ -89,7 +89,7 @@ const LockSettingScreen = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.sectionHeader}>App Lock</Text>
+      <Text style={styles.sectionHeader}>Manage App Lock</Text>
 
       <View style={styles.card}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>

@@ -29,7 +29,7 @@ export default function ViewScreen() {
   // if (!selectedItem) {
     return (
       <View className="flex-1 items-center justify-center bg-black">
-        <Text className="text-white text-lg">Feeds Screen not Implemented Yet</Text>
+        <Text className="text-white text-lg">Screen not Implemented Yet</Text>
         {/* <Text className="text-white text-lg">Item not found</Text> */}
       </View>
     );

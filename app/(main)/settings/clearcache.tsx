@@ -18,19 +18,17 @@ const ClearCacheScreen = () => {
     type: "metadata" | "everything",
     destructive = false
   ) => (
-    <Pressable
-      onPress={() => handleClearCache(type)}
-      android_ripple={{ color: destructive ? "#550000" : "#333" }}
-      style={({ pressed }) => [
-        styles.card,
-        destructive && styles.destructiveCard,
-        pressed && { transform: [{ scale: 0.97 }] },
-      ]}
-    >
-      <Text style={[styles.buttonText, destructive && styles.destructiveText]}>
-        {label}
-      </Text>
-    </Pressable>
+    <View style={[styles.card, destructive && styles.destructiveCard]}>
+      <Pressable
+        onPress={() => handleClearCache(type)}
+        android_ripple={{ color: destructive ? "#550000" : "#333" }}
+        style={({ pressed }) => pressed && { transform: [{ scale: 0.97 }] }}
+      >
+        <Text style={[styles.buttonText, destructive && styles.destructiveText]}>
+          {label}
+        </Text>
+      </Pressable>
+    </View>
   );
 
   return (
@@ -74,7 +72,6 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     flexDirection: "column",
-    gap: 16,
   },
   card: {
     backgroundColor: "#1F1F1F",
@@ -83,6 +80,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 16, // spacing between cards
     ...Platform.select({
       ios: {
         shadowColor: "#000",

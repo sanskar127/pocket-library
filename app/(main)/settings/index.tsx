@@ -9,12 +9,14 @@ type SettingItem =
     title: string
     subtitle: string
     onPress: () => void
+    disabled?: boolean
   }
   | {
     title: string
     subtitle: string
     isSwitch: true
     value: boolean
+    disabled?: boolean
     onValueChange: () => void
   }
 
@@ -38,11 +40,30 @@ const Index = () => {
           title: 'Your Library',
           subtitle: 'Manage your media library',
           onPress: () => router.push('/settings/library'),
+          disabled: true
         },
         {
           title: 'Manage Search History',
           subtitle: 'Clear or manage search data',
           onPress: () => router.push('/settings/history'),
+          disabled: true
+        },
+      ],
+    },
+    {
+      title: 'Security & Maintenance',
+      data: [
+        {
+          title: 'Delete Cache',
+          subtitle: 'Delete metadata, Delete everything',
+
+          onPress: () => router.push('/settings/clearcache'),
+        },
+        {
+          title: 'Manage App Lock',
+          subtitle: 'Secure your app with a lock',
+
+          onPress: () => router.push('/settings/lock'),
         },
       ],
     },
@@ -54,24 +75,8 @@ const Index = () => {
           subtitle: 'Enable offline mode',
           isSwitch: true,
           value: offline,
+          disabled: true,
           onValueChange: () => setOffline(prev => !prev),
-        },
-      ],
-    },
-    {
-      title: 'Security & Maintenance',
-      data: [
-        {
-          title: 'Delete Cache',
-          subtitle: 'Clear metadata only, Clear complete data',
-
-          onPress: () => router.push('/settings/clearcache'),
-        },
-        {
-          title: 'Manage App Lock',
-          subtitle: 'Secure your app with a lock',
-
-          onPress: () => router.push('/settings/lock'),
         },
       ],
     },
@@ -90,21 +95,35 @@ const Index = () => {
               {category.data.map((item, index) => (
                 <TouchableOpacity
                   key={index}
-                  onPress={!isSwitchItem(item) ? item.onPress : undefined}
-                  activeOpacity={isSwitchItem(item) ? 1 : 0.7}
+                  onPress={!isSwitchItem(item) && !item.disabled ? item.onPress : undefined}
+                  activeOpacity={item.disabled ? 1 : 0.7}
+                  disabled={item.disabled}
                   className="flex-row justify-between items-center p-4 rounded-lg"
                 >
                   <View className="flex-1">
-                    <Text className="text-white font-medium">{item.title}</Text>
-                    <Text className="text-gray-400 text-sm">{item.subtitle}</Text>
+                    <Text
+                      className={`font-medium ${item.disabled ? 'text-gray-600' : 'text-white'}`}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text
+                      className={`text-sm ${item.disabled ? 'text-gray-600' : 'text-gray-400'}`}
+                    >
+                      {item.subtitle}
+                    </Text>
                   </View>
 
                   {isSwitchItem(item) ? (
-                    <Switch value={item.value} onValueChange={item.onValueChange} />
+                    <Switch value={item.value} disabled={item.disabled} onValueChange={item.onValueChange} />
                   ) : (
-                    <Ionicons name='chevron-forward' size={20} color="white" />
+                     !item.disabled && <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color='white'
+                    />
                   )}
                 </TouchableOpacity>
+
               ))}
             </View>
           </View>
