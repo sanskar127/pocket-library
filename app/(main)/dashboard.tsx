@@ -45,7 +45,7 @@ export default function HomeScreen() {
         keyExtractor={item => item.id.toString()}
         renderItem={renderItem}
         ListHeaderComponent={
-          <View className="border-b border-gray-700 flex-row items-center justify-end py-2 px-2">
+          <View className="flex flex-row items-center justify-end py-2 px-2">
             <Pressable onPress={handleFilterPress} className="flex-row items-center gap-1 bg-white rounded-md p-4">
               <Ionicons name="funnel-outline" size={22} color="black" />
               {/* <Text className="text-white text-lg">Filter </Text> */}
