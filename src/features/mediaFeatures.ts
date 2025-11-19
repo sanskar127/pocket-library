@@ -3,7 +3,7 @@ import { readdir, stat } from 'fs/promises'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { thumbnailsDir, imageFormats, media, videoFormats, mediaDir, setMedia } from "../states";
 import { generateShortId, generateThumbnail, sanitizeFileName, thumbnailExistsAndValid, writeCacheData } from "../utils";
-import { ChunkInterface, DirectoryInterface, ImageExtension, ItemType, ScanImagesInterface, ScanVideosInterface, VideoExtension, VideoInterface, VideoMetadata, sortInterface } from "../types";
+import { ChunkInterface, DirectoryInterface, ImageExtension, ItemType, ScanImagesInterface, ScanVideosInterface, VideoExtension, VideoInterface, VideoMetadata } from "../types";
 import Ffmpeg from "fluent-ffmpeg";
 
 // Retrieve video details and create a response object for a video file
@@ -26,8 +26,13 @@ export const scanVideos: ScanVideosInterface = async (filepath, extension) => {
       url: `/media/${relativeFilePath}`,
       thumbnail
     };
-  } catch (error) {
-    console.error(`Error processing video ${filepath}:`, error);
+  } catch (error: any) {
+    console.error(`[scanVideos] Failed to process video`, {
+      filepath,
+      extension,
+      message: error.message,
+      stack: error.stack
+    });
     return null;  // Returning null for failed video processing
   }
 };
@@ -47,9 +52,14 @@ export const scanImages: ScanImagesInterface = async (filepath, extension) => {
       url: `/media/${relativeFilePath}`,
       thumbnail: `/media/${relativeFilePath}`
     };
-  } catch (error) {
-    console.error(`Error processing video ${filepath}:`, error);
-    return null;  // Returning null for failed video processing
+  } catch (error: any) {
+    console.error(`[scanImages] Failed to process image`, {
+      filepath,
+      extension,
+      message: error.message,
+      stack: error.stack
+    });
+    return null;  // Returning null for failed image processing
   }
 };
 
@@ -57,34 +67,31 @@ export const mediaChecker = async (targetPath: string): Promise<boolean> => {
   try {
     const stats = await stat(targetPath);
 
-    // Skip .cache or hidden dirs
+    // Skip hidden dirs
     if (path.basename(targetPath).startsWith('.') || path.basename(targetPath) === '.cache') {
       return false;
     }
 
-    // If it's a supported video file
     const ext = path.extname(targetPath).toLowerCase();
     if (stats.isFile() && (videoFormats.hasOwnProperty(ext) || imageFormats.hasOwnProperty(ext))) {
       return true;
     }
 
-    // If it's a directory, scan its contents recursively
     if (stats.isDirectory()) {
       const entries = await readdir(targetPath, { withFileTypes: true });
-
       for (const entry of entries) {
         const fullPath = path.join(targetPath, entry.name);
-
-        // Recursively check subdirectories and files
-        if (await mediaChecker(fullPath)) {
-          return true;
-        }
+        if (await mediaChecker(fullPath)) return true;
       }
     }
 
-    return false; // No valid media found
-  } catch (error) {
-    console.error(`Error in mediaChecker for path ${targetPath}:`, error);
+    return false;
+  } catch (error: any) {
+    console.error(`[mediaChecker] Error checking path`, {
+      targetPath,
+      message: error.message,
+      stack: error.stack
+    });
     return false;
   }
 };
@@ -119,7 +126,12 @@ export const getThumbnail = async (videoFullPath: string, duration: number): Pro
 
     return `/thumbnails/${path.relative(thumbnailsDir, thumbPath).replace(/\\/g, '/')}`;
   } catch (error: any) {
-    console.error(`❌ Failed to create thumbnail for ${videoFullPath}: ${error.message}`);
+    console.error(`[getThumbnail] Failed to generate thumbnail`, {
+      videoFullPath,
+      duration,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 };
@@ -223,97 +235,59 @@ export const transcodingHLS = async (videoFile: string, outputDir: string): Prom
   }
 };
 
-export const fetchMediaEntries = async (pathname: string): Promise<void> => {
-  const items = await readdir(pathname);
-  const entries = await Promise.all(items.map(async item => {
-    try {
-      const filePath = path.join(pathname, item);
-      if (!await mediaChecker(filePath)) {
-        return null;  // Skip non-media files
-      }
+export const fetchMediaEntries = async (pathname: string): Promise<ItemType[]> => {
+  try {
+    const items = await readdir(pathname);
 
-      const currentPath = path.join(pathname, item);
-      const stats = await stat(currentPath);
+    const entries = await Promise.all(
+      items.map(async item => {
+        const filePath = path.join(pathname, item);
 
-      if (stats.isDirectory()) {
-        const name = path.basename(currentPath);
-        return {
-          id: generateShortId(path.relative(mediaDir, pathname) + stats.mtimeMs),
-          name,
-          size: -1,
-          type: 'directory',
-          modifiedAt: stats.mtime,
-          url: name,
-        } as DirectoryInterface;
-      }
-
-      const extname = path.extname(item).toLowerCase() as VideoExtension;
-
-      if (videoFormats.hasOwnProperty(extname)) {
+        // global try: anything inside triggers outer catch
         try {
-          return await scanVideos(currentPath, extname);
-        } catch (videoError) {
-          console.error(`Error scanning video at ${currentPath}:`, videoError);
-          return { error: "Failed to process video" }; // Fallback return
+          if (!await mediaChecker(filePath)) {
+            return null;
+          }
+
+          const stats = await stat(filePath);
+
+          if (stats.isDirectory()) {
+            const name = path.basename(filePath);
+            return {
+              id: generateShortId(path.relative(mediaDir, pathname) + stats.mtimeMs),
+              name,
+              size: -1,
+              type: "directory",
+              modifiedAt: stats.mtime,
+              url: name
+            } as DirectoryInterface;
+          }
+
+          const ext = path.extname(item).toLowerCase();
+
+          // video
+          if (videoFormats.hasOwnProperty(ext)) {
+            return await scanVideos(filePath, ext as VideoExtension);
+          }
+
+          // image
+          if (imageFormats.hasOwnProperty(ext)) {
+            return await scanImages(filePath, ext as ImageExtension);
+          }
+
+          return null;
+
+        } catch (innerErr) {
+          // Rethrow: ensures ANY file error makes promise reject
+          throw new Error(`Failed processing file: ${filePath}\n${innerErr}`);
         }
-      }
+      })
+    );
 
-      if (imageFormats.hasOwnProperty(extname)) {
-        try {
-          return await scanImages(currentPath, extname as ImageExtension);
-        } catch (imageError) {
-          console.error(`Error scanning image at ${currentPath}:`, imageError);
-          return { error: "Failed to process image" }; // Fallback return
-        }
-      }
+    return entries.filter((e): e is ItemType => e !== null);
 
-      return null;  // No match for video or image formats
-    } catch (error) {
-      console.error(`Error processing file ${item}:`, error);
-      return { error: "Failed to process file" }; // Fallback return
-    }
-  })).then(entries => entries.filter(item => item !== null)) as ItemType[];
-
-  setMedia({ [pathname]: entries })
-  writeCacheData()
-}
-
-// Sorting logic for media
-export const handleSort = (pathname: string, sorting: sortInterface) => {
-  setMedia({
-    [pathname]: media[pathname].sort((a, b) => {
-      // First, check if sortDirectoryFirst is set
-      if (sorting.sortDirectoryFirst) {
-        // Directories first, files later
-        if (a.type === 'directory' && b.type !== 'directory') return -1; // a is a directory, b is a file
-        if (a.type !== 'directory' && b.type === 'directory') return 1;  // b is a directory, a is a file
-      } else {
-        // If sortDirectoryFirst is false, we want files first (default)
-        if (a.type === 'directory' && b.type !== 'directory') return 1; // a is a directory, b is a file
-        if (a.type !== 'directory' && b.type === 'directory') return -1; // b is a directory, a is a file
-      }
-
-      // Now apply sorting based on the requested type (name, date, size)
-      const compare = (field: keyof ItemType) => {
-        const valA = a[field];
-        const valB = b[field];
-        if (sorting.order === 'ascending') {
-          return valA < valB ? -1 : valA > valB ? 1 : 0;
-        } else {
-          return valA > valB ? -1 : valA < valB ? 1 : 0;
-        }
-      };
-
-      switch (sorting.type) {
-        case 'name':
-          return compare('name');
-        case 'date':
-          return compare('modifiedAt');
-        case 'size':
-          return compare('size');
-        default:
-          return 0;
-      }
-    })
-  });
-}
+  } catch (err) {
+    // Any error results in full rejection
+    throw err;
+  }
+};

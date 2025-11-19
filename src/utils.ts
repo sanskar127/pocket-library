@@ -3,8 +3,8 @@ import Ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs'
 import qrcode from 'qrcode-terminal';
 import os from 'os'
-import { cachingFile, media } from './states';
-import path from 'path';
+import { cachingFile, media, setMedia } from './states';
+import { ItemType, sortInterface } from './types';
 
 // Sanitize file names for Windows (and general safety)
 export const sanitizeFileName = (name: string): string => {
@@ -82,14 +82,7 @@ export const generateQrCode = (data: string): Promise<string> => {
 };
 
 export const writeCacheData = () => {
-  const dir = path.dirname(cachingFile);
-
   try {
-    // Ensure the directory exists (synchronously)
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
     // Convert media object to JSON string
     const jsonString = JSON.stringify(media, null, 2);
 
@@ -98,6 +91,47 @@ export const writeCacheData = () => {
 
   } catch (error) {
     console.error('Error writing JSON file:', error);
-    throw error; // Rethrow the error to maintain the behavior of the original function
+    throw error;
   }
 };
+
+// Sorting logic for media
+export const sortEntries = (pathname: string, sorting: sortInterface) => {
+  setMedia({
+    [pathname]: media[pathname].sort((a, b) => {
+      // First, check if sortDirectoryFirst is set
+      if (sorting.sortDirectoryFirst) {
+        // Directories first, files later
+        if (a.type === 'directory' && b.type !== 'directory') return -1; // a is a directory, b is a file
+        if (a.type !== 'directory' && b.type === 'directory') return 1;  // b is a directory, a is a file
+      } else {
+        // If sortDirectoryFirst is false, we want files first (default)
+        if (a.type === 'directory' && b.type !== 'directory') return 1; // a is a directory, b is a file
+        if (a.type !== 'directory' && b.type === 'directory') return -1; // b is a directory, a is a file
+      }
+
+      // Now apply sorting based on the requested type (name, date, size)
+      const compare = (field: keyof ItemType) => {
+        const valA = a[field];
+        const valB = b[field];
+        if (sorting.order === 'ascending') {
+          return valA < valB ? -1 : valA > valB ? 1 : 0;
+        } else {
+          return valA > valB ? -1 : valA < valB ? 1 : 0;
+        }
+      };
+
+      switch (sorting.type) {
+        case 'name':
+          return compare('name');
+        case 'date':
+          return compare('modifiedAt');
+        case 'size':
+          return compare('size');
+        default:
+          console.warn(`[handleSort] Unknown sort type: ${sorting.type}`);
+          return 0;
+      }
+    })
+  });
+}

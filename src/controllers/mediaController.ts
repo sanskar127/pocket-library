@@ -1,25 +1,21 @@
-import { fetchMediaEntries, getChunk, handleSort, transcodingHLS, validateLimit } from "../features/mediaFeatures";
-import { mediaDir, playbackDir, media, setMedia, cacheDir } from '../states';
+import { fetchMediaEntries, getChunk, transcodingHLS, validateLimit } from "../features/mediaFeatures";
+import { mediaDir, playbackDir, media, setMedia, cacheDir, cachingFile } from '../states';
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'fs';
 import { requestBodyInterface } from "../types";
 import { Request, Response } from "express";
-import { writeCacheData } from "../utils";
 import path from 'path';
+import { sortEntries, writeCacheData } from "../utils";
 
 export const mediaController = async (request: Request, response: Response) => {
     const {
         pathname,
         limit,
         offset = 0,
-        sorting = {
-            type: 'date',
-            order: 'descending',
-            sortDirectoryFirst: true
-        }
+        sorting = { type: 'date', order: 'descending', sortDirectoryFirst: true }
     }: requestBodyInterface = request.body;
     if (!validateLimit(limit)) return response.status(400).json({ error: 'Invalid limit' });
 
-    const decodedDir = decodeURIComponent(pathname);    // Transforming Encoded URI to string with spaces
+    const decodedDir = decodeURIComponent(pathname ?? '/');    // Transforming Encoded URI to string with spaces
     const navigationPath = decodedDir ? path.join(mediaDir, decodedDir) : mediaDir;
 
     const safePath = path.normalize(navigationPath);
@@ -30,12 +26,18 @@ export const mediaController = async (request: Request, response: Response) => {
         // Create cache dir if missing
         if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true })
 
-        if (!(pathname in media)) fetchMediaEntries(navigationPath)
+        if (!media[decodedDir]) {
+            const entries = await fetchMediaEntries(navigationPath);
+            setMedia({ [decodedDir]: entries });
+            writeCacheData();   // cache to disk
+            sortEntries(decodedDir, sorting);   // sorting ALWAYS after setMedia()
+        } else {
+            // Handle Sorting entries from media state
+            sortEntries(decodedDir, sorting)
+            if (!existsSync(cachingFile)) writeCacheData();   // cache to disk
+        }
 
-        // Handle Sorting
-        handleSort(pathname, sorting)
-
-        const { data, hasMore } = await getChunk(pathname, limit, offset);
+        const { data, hasMore } = await getChunk(decodedDir, limit, offset);
         response.status(200).json({ data, hasMore });
     } catch (error) {
         console.error(`Error scanning directory ${navigationPath}:`, error);
@@ -89,7 +91,7 @@ export const resetMediaController = (req: Request, res: Response) => {
 
         // Delete cache depending on the option
         if (option === 'metadata') {
-            writeCacheData(); // in case writeCacheData is async
+            rmSync(cachingFile, { force: true })
         } else {
             rmSync(cacheDir, { recursive: true, force: true });
         }
