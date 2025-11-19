@@ -138,11 +138,11 @@ export const getThumbnail = async (videoFullPath: string, duration: number): Pro
 
 export const getChunk: ChunkInterface = async (pathname, limit, offset) => {
   const entries = media[pathname];
-  const hasMore = offset + limit < entries.length;
+  const length = entries.length
+  limit = Math.min(limit, length - offset);
+  const hasMore = offset + limit < length;
 
-  if (entries.length <= limit) return { data: entries, hasMore: false };
-
-  let data = entries.slice(offset, offset + limit);
+  const data = entries.slice(offset, offset + limit);
 
   // Wait for all thumbnail generation tasks to complete
   await Promise.all(data.map(async (item) => {
