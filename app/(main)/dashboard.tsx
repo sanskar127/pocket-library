@@ -31,9 +31,9 @@ export default function HomeScreen() {
         keyExtractor={item => item.id.toString()}
         renderItem={renderItem}
         ListHeaderComponent={
-          <View className="flex flex-row items-center justify-end py-2 px-2">
-            <Pressable onPress={handleFilterPress} className="flex-row items-center gap-1 bg-white rounded-md p-3">
-              <Ionicons name="funnel-outline" size={20} color="black" />
+          <View className="mb-2 flex flex-row items-center justify-end py-2 px-5">
+            <Pressable onPress={handleFilterPress} className="flex-row items-center gap-1 bg-[#1F1F1F] rounded-md px-3 py-1">
+              <Ionicons name="funnel" size={20} color="white" />
             </Pressable>
           </View>
         }

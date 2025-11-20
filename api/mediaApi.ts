@@ -21,9 +21,10 @@ export const mediaApi = createApi({
             })
         }),
         resetMedia: builder.mutation({
-            query: () => ({
+            query: params => ({
                 url: '/media/reset',
-                method: 'DELETE'
+                method: 'DELETE',
+                params
             })
         })
     })

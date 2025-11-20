@@ -1,8 +1,7 @@
-import { File } from "expo-file-system"
 import {DownloadManagerInterface} from "@/types/types"
 
 export default class DownloadManager {
-    file!: File
+    // file!: File
     chunksize?: number
     bytesDownloaded: number
     

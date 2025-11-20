@@ -10,7 +10,7 @@ import { formatRelativeTime, formatSize } from '@/utils/utils';
 import { useEffect, useState } from 'react';
 import { useGetSelectedMediaMutation } from '@/api/mediaApi';
 import { useLocalSearchParams } from 'expo-router';
-import Download from '@/components/ui/Download';
+// import Download from '@/components/ui/Download';
 
 const { width: deviceWidth } = Dimensions.get('window');
 
@@ -77,17 +77,18 @@ export default function WatchScreen() {
           {selectedMedia?.name}
         </Text>
 
-        <View className='flex flex-row justify-between'>
+        {/* <View className='flex flex-row justify-between'> */}
           <Text className="text-gray-400 text-sm">
             {formatRelativeTime(selectedMedia?.modifiedAt)} • {selectedMedia?.type}
           </Text>
-          <Download entry={{ ...selectedMedia as VideoInterface, url }}>
+          {/* <Download entry={{ ...selectedMedia as VideoInterface, url }}>
             <Text className="text-white text-sm font-medium">
               Download ({formatSize(selectedMedia?.size)})
             </Text>
-          </Download>
+          </Download> */}
+          <Text className='my-4 p-3 text-center text-white text-sm font-semibold border border-white'>Download feature is currently not available</Text>
         </View>
-      </View>
+      {/* </View> */}
 
       <View style={styles.controlsContainer}>
         <FlatList

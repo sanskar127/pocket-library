@@ -1,14 +1,29 @@
+import { useResetMediaMutation } from "@/api/mediaApi";
 import React from "react";
 import { Alert, Pressable, Text, View, StyleSheet, Platform } from "react-native";
 
 const ClearCacheScreen = () => {
+  const [resetMedia] = useResetMediaMutation()
+
   const handleClearCache = (type: "metadata" | "everything") => {
     Alert.alert(
       "Confirm",
       `Are you sure you want to clear ${type}?`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "OK", onPress: () => console.log(`${type} cleared`) },
+        {
+          text: "Okay",
+          onPress: () => {
+            resetMedia({ option: type })
+              .unwrap()
+              .then(() => {
+                Alert.alert("Success", `${type} cleared successfully.`);
+              })
+              .catch(() => {
+                Alert.alert("Error", "Failed to clear cache.");
+              });
+          },
+        },
       ]
     );
   };
@@ -22,7 +37,7 @@ const ClearCacheScreen = () => {
       <Pressable
         onPress={() => handleClearCache(type)}
         android_ripple={{ color: destructive ? "#550000" : "#333" }}
-        style={({ pressed }) => pressed && { transform: [{ scale: 0.97 }] }}
+        style={({ pressed }) => (pressed && { transform: [{ scale: 0.97 }] })}
       >
         <Text style={[styles.buttonText, destructive && styles.destructiveText]}>
           {label}

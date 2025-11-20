@@ -69,7 +69,7 @@ const FilterBottomSheet: FC<props> = ({ children, ref }) => {
                 <BottomSheetModal
                     ref={ref}
                     snapPoints={["30%"]}
-                    backgroundStyle={{ backgroundColor: "black" }}
+                    backgroundStyle={{ backgroundColor: "#1F1F1F" }}
                     handleIndicatorStyle={{ backgroundColor: "white" }}
                     enablePanDownToClose
                 >
@@ -120,7 +120,7 @@ const FilterBottomSheet: FC<props> = ({ children, ref }) => {
                                 </View>
 
                                 <Pressable onPress={submitChanges} className="bg-white p-3 rounded-md mt-4">
-                                    <Text className="text-center text-black text-lg font-semibold">Done</Text>
+                                    <Text className="text-center text-[#1F1F1F] text-lg font-semibold">Done</Text>
                                 </Pressable>
 
                             </BottomSheetView>
@@ -132,7 +132,7 @@ const FilterBottomSheet: FC<props> = ({ children, ref }) => {
                 <BottomSheetModal
                     ref={typeSheetRef}
                     snapPoints={["30%"]}
-                    backgroundStyle={{ backgroundColor: "black" }}
+                    backgroundStyle={{ backgroundColor: "#1F1F1F" }}
                     handleIndicatorStyle={{ backgroundColor: "white" }}
                 >
                     {
@@ -166,7 +166,7 @@ const FilterBottomSheet: FC<props> = ({ children, ref }) => {
                 <BottomSheetModal
                     ref={orderSheetRef}
                     snapPoints={["30%"]}
-                    backgroundStyle={{ backgroundColor: "black" }}
+                    backgroundStyle={{ backgroundColor: "#1F1F1F" }}
                     handleIndicatorStyle={{ backgroundColor: "white" }}
                 >
                     {

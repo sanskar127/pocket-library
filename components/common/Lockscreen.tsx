@@ -63,7 +63,7 @@ const Lockscreen: FC<{ children: ReactNode }> = ({ children }) => {
                     right: 0,            // Cover right side of the screen
                     bottom: 0,           // Cover bottom of the screen
                 }}
-                className="bg-background flex justify-center items-center"
+                className="bg-black flex justify-center items-center"
             >
                 <Pressable onPress={handleAuthenticate}>
                     <Text className="text-primary text-lg font-light">Unlock</Text>
