@@ -1,6 +1,6 @@
 import { FC, ReactNode, RefObject, useCallback, useRef, useState, useEffect } from "react"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
-import { BottomSheetModal, BottomSheetView, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetView, BottomSheetModalProvider, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Text, View, TouchableOpacity, Pressable, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Switch from "./Switch";
@@ -71,6 +71,14 @@ const FilterBottomSheet: FC<props> = ({ children, ref }) => {
                     snapPoints={["30%"]}
                     backgroundStyle={{ backgroundColor: "#1F1F1F" }}
                     handleIndicatorStyle={{ backgroundColor: "white" }}
+                    backdropComponent={(props) => (
+                        <BottomSheetBackdrop
+                            {...props}
+                            disappearsOnIndex={-1}
+                            appearsOnIndex={0}
+                            opacity={0.5}   // darkness (0–1)
+                        />
+                    )}
                     enablePanDownToClose
                 >
                     {
@@ -134,6 +142,14 @@ const FilterBottomSheet: FC<props> = ({ children, ref }) => {
                     snapPoints={["30%"]}
                     backgroundStyle={{ backgroundColor: "#1F1F1F" }}
                     handleIndicatorStyle={{ backgroundColor: "white" }}
+                    backdropComponent={(props) => (
+                        <BottomSheetBackdrop
+                            {...props}
+                            disappearsOnIndex={-1}
+                            appearsOnIndex={0}
+                            opacity={0.5}   // darkness (0–1)
+                        />
+                    )}
                 >
                     {
                         loading || !localFilter ? (
@@ -168,6 +184,14 @@ const FilterBottomSheet: FC<props> = ({ children, ref }) => {
                     snapPoints={["30%"]}
                     backgroundStyle={{ backgroundColor: "#1F1F1F" }}
                     handleIndicatorStyle={{ backgroundColor: "white" }}
+                    backdropComponent={(props) => (
+                        <BottomSheetBackdrop
+                            {...props}
+                            disappearsOnIndex={-1}
+                            appearsOnIndex={0}
+                            opacity={0.8}   // darkness (0–1)
+                        />
+                    )}
                 >
                     {
                         loading || !localFilter ? (

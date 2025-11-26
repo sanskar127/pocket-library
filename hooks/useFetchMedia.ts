@@ -42,9 +42,7 @@ const useFetchMedia = () => {
       const response = await getMedia({ pathname, offset, limit: LIMIT, sorting: filter }).unwrap()
       setData(prev => [...prev, ...response.data])
       setHasMore(response.hasMore)
-    } catch (err) {
-      console.error('Failed to fetch media:', err)
-    }
+    } catch { }
   }, [pathname, offset, filter, getMedia])
 
   useEffect(() => {
