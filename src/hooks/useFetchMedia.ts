@@ -1,49 +1,79 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
-import usePathTracker from "./usePathTracker"
-import type { QueryKeyType, ResponseInterface, UseFetchMediaInterface } from "../types/types";
-import { getLimit } from "../utils";
+import { useGetMediaMutation } from '../api/mediaApi'
+import { useCallback, useEffect, useState, useRef } from 'react'
+import type { ItemType } from '../types/types'
+import { useLocation } from 'react-router'
+import { getLimit } from '../utils'
 
-const useFetchMedia: UseFetchMediaInterface = () => {
-    const pathname = usePathTracker()
-    const { initialLimit, limit } = getLimit()
+const useFetchMedia = () => {
+  const [getMedia, { isLoading, isError }] = useGetMediaMutation()
+  const [isRefreshing, setRefreshing] = useState(false)
+  const [data, setData] = useState<ItemType[]>([])
+  const [hasMore, setHasMore] = useState<boolean>(false)
+  const [offset, setOffset] = useState(0)
 
-    const fetchVideos = async ({ pageParam: offset }: { pageParam: number }): Promise<ResponseInterface> => {
-        const res = await fetch(`/api/media/`, {
-            method: "POST",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                pathname,
-                limit: offset === 0 ? initialLimit : limit,
-                offset
-            })
-        })
+  const isInitialLoad = useRef(true)
+  const { pathname } = useLocation()
+  const { initialLimit, limit } = getLimit()
 
-        if (!res.ok) {
-            // If not OK, parse the error response and throw an Error
-            const errorData = await res.json();
-            throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
-        }
+  // Update offset for pagination
+  const updateOffset = () => {
+    if (hasMore) setOffset(prev => prev + limit)
+  }
 
-        // Parse the JSON response.
-        const jsonResponse: ResponseInterface = await res.json();
-
-
-        if (jsonResponse === null || typeof jsonResponse !== 'object' || !('data' in jsonResponse) || !('hasMore' in jsonResponse)) {
-            throw new Error("API response was null or did not match expected structure.");
-        }
-
-        return jsonResponse;
+  const handleReset = () => {
+    if (!isInitialLoad.current) {
+      setData([])
+      setHasMore(false)
+      setOffset(0)
     }
+    isInitialLoad.current = false
+  }
 
-    return useInfiniteQuery<ResponseInterface, Error, ResponseInterface, QueryKeyType, number>({
-        queryKey: ['media', pathname],
-        initialPageParam: 0,
-        queryFn: fetchVideos,
-        getNextPageParam: (lastPage, allPages) => {
-            if (lastPage.hasMore) return allPages.length * limit
-            return undefined
-        }
-    })
+  // Reset data on pathname change
+  useEffect(() => {
+    handleReset()
+  }, [pathname])
+
+  // Fetch media data
+  const fetchData = useCallback(async () => {
+    try {
+      const currentLimit = offset === 0 ? initialLimit : limit
+      const response: { data: ItemType[], hasMore: boolean } = await getMedia({ pathname, offset, limit: currentLimit }).unwrap()
+
+      if (response) {
+        setData(prev => [...prev, ...response.data])
+        setHasMore(response.hasMore)
+      }
+
+    } catch (error) {
+      console.error('Failed to fetch media:', error)
+    }
+  }, [pathname, getMedia, offset])
+
+  // Trigger data fetch when the limit changes or initial fetch
+  useEffect(() => {
+    // if (limit && initialLimit) {
+    fetchData()
+    // }
+  }, [fetchData])
+
+  // Handle pull-to-refresh action
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    handleReset()
+    await fetchData() // Manually trigger the data fetch again
+    setRefreshing(false)
+  }
+
+  return {
+    data,
+    isLoading,
+    isRefreshing,
+    handleRefresh,
+    updateOffset,
+    hasMore,
+    isError,
+  }
 }
 
 export default useFetchMedia

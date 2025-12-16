@@ -1,16 +1,10 @@
 import { useParams } from "react-router";
 
 import VideoPlayer from "../components/ui/VideoPlayer";
-import type { ItemType, VideoInterface } from "../types/types";
+import type { VideoInterface } from "../types/types";
 import NotFound from "../components/common/NotFound";
-import type { FC } from "react";
 
-interface WatchInterface {
-  data: ItemType[]
-  isPending: boolean
-}
-
-const Watch: FC<WatchInterface> = ({ data }) => {
+const Watch = () => {
   const { id } = useParams<{ id: string }>();
 
   const entry = data.find(item => item.id === id) as VideoInterface
