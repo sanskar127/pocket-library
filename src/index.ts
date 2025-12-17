@@ -1,10 +1,10 @@
-import { selectedMediaController, mediaController, resetMediaController, streamingController } from './controllers/mediaController';
+import { selectedMediaController, mediaController, resetMediaController, streamingController, downloadStreamController } from './controllers/mediaController';
 import { thumbnailsDir, mediaDir, cachingFile, setMedia } from './states';
 import { generateQrCode, getLocalIPAddress } from './utils';
 import express, { Express, Response } from 'express';
 import { existsSync, readFileSync } from 'fs';
-import { mediaInterface } from './types';
 import cors from 'cors';
+import { ItemType } from './types';
 
 const app: Express = express();
 const port: number = 3000;
@@ -15,6 +15,7 @@ app.use(cors());
 
 app.post('/api/media', mediaController);
 app.post('/api/media/:id', selectedMediaController);
+app.post('/api/media/download', downloadStreamController);
 app.delete('/api/media/reset', resetMediaController);
 app.post('/api/playback', streamingController);
 
@@ -34,7 +35,7 @@ app.listen(port, async () => {
     try {
         if (existsSync(cachingFile)) {
             const data = readFileSync(cachingFile, 'utf8');
-            const jsonData: mediaInterface = JSON.parse(data);
+            const jsonData: Record<string, ItemType[]> = JSON.parse(data);
             setMedia(jsonData);
         }
 

@@ -1,5 +1,5 @@
 import path from 'path';
-import { ImageExtension, mediaInterface, VideoExtension } from './types';
+import { ImageExtension, ItemType, VideoExtension } from './types';
 
 // [pathname] : ["entry1", entry2,...]
 
@@ -10,13 +10,10 @@ export const thumbnailsDir: string = path.join(cacheDir, 'thumbnails')
 export const playbackDir: string = path.join(cacheDir, 'playback');
 export const cachingFile = path.join(cacheDir, 'metadata.json')
 
-export let media: mediaInterface = {};
-export function setMedia(data: mediaInterface) { media = { ...media, ...data } }
-
-export let chunkedData: string[] = [];
-export function setChunkedData(data: string[] | null) {
-  if (data === null) chunkedData = [];
-  else chunkedData = [...chunkedData, ...data];
+export let media: Record<string, ItemType[]> = {};
+export function setMedia(data: Record<string, ItemType[]> | null) { 
+  if (data) media = { ...media, ...data } 
+  else media = {}
 }
 
 export const videoFormats: Record<VideoExtension, string> = {

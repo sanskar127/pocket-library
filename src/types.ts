@@ -103,7 +103,3 @@ export interface VideoMetadata {
   width: number;
   height: number;
 }
-
-export interface mediaInterface {
-  [key: string]: ItemType[]
-}

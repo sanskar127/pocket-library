@@ -1,6 +1,6 @@
 import { fetchMediaEntries, getChunk, transcodingHLS, validateLimit } from "../features/mediaFeatures";
 import { mediaDir, playbackDir, media, setMedia, cacheDir, cachingFile } from '../states';
-import { existsSync, mkdirSync, readdirSync, rmSync } from 'fs';
+import { createReadStream, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'fs';
 import { requestBodyInterface } from "../types";
 import { Request, Response } from "express";
 import path from 'path';
@@ -77,6 +77,48 @@ export const selectedMediaController = async (request: Request, response: Respon
     }
 };
 
+export const downloadStreamController = async (request: Request, response: Response) => {
+    const { filePath }: { filePath: string } = request.body
+
+    if (!existsSync(filePath)) {
+        return response.status(404).send("File not found");
+    }
+
+    const stat = statSync(filePath);
+    const fileSize = stat.size;
+    const range = request.headers.range;
+
+    if (!range) {
+        response.writeHead(200, {
+            "Content-Length": fileSize,
+            "Content-Type": "application/octet-stream",
+        });
+        createReadStream(filePath).pipe(response);
+        return;
+    }
+
+    const [startStr, endStr] = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(startStr, 10);
+    const end = endStr ? parseInt(endStr, 10) : fileSize - 1;
+
+    if (start >= fileSize || end >= fileSize) {
+        response.status(416).header({
+            "Content-Range": `bytes */${fileSize}`,
+        });
+        return response.end();
+    }
+
+    const chunkSize = end - start + 1;
+    response.writeHead(206, {
+        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+        "Accept-Ranges": "bytes",
+        "Content-Length": chunkSize,
+        "Content-Type": "application/octet-stream",
+    });
+
+    createReadStream(filePath, { start, end }).pipe(response);
+}
+
 export const resetMediaController = (req: Request, res: Response) => {
     try {
         const option = req.query.option as 'metadata' | 'everything' | undefined;
@@ -87,7 +129,7 @@ export const resetMediaController = (req: Request, res: Response) => {
         }
 
         // Clear media state
-        setMedia({});
+        setMedia(null);
 
         // Delete cache depending on the option
         if (option === 'metadata') {
