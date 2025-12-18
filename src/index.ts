@@ -13,11 +13,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
-app.post('/api/media', mediaController);
-app.post('/api/media/:id', selectedMediaController);
-app.post('/api/media/download', downloadStreamController);
-app.delete('/api/media/reset', resetMediaController);
-app.post('/api/playback', streamingController);
+app.get('/api/media', mediaController);
+app.get('/api/media/:id', selectedMediaController);
+app.get('/api/download', downloadStreamController);
+app.delete('/api/reset', resetMediaController);
+app.get('/api/playback', streamingController);
 
 app.get('/owner', (_, response: Response) => response.json({
     message: "Backend service for 'Pocket Media Library,' originally created and maintained by Sanskar (a.k.a. 5agmi), since July 2025."

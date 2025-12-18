@@ -1,44 +1,64 @@
 import { fetchMediaEntries, getChunk, transcodingHLS, validateLimit } from "../features/mediaFeatures";
-import { mediaDir, playbackDir, media, setMedia, cacheDir, cachingFile } from '../states';
+import { mediaDir, playbackDir, media, setMedia, cacheDir, cachingFile, mediaFormats } from '../states';
 import { createReadStream, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'fs';
-import { requestBodyInterface } from "../types";
+import { MediaExtension, requestQueryInterface, sortInterface } from "../types";
+import { sortEntries, writeCacheData } from "../utils";
 import { Request, Response } from "express";
 import path from 'path';
-import { sortEntries, writeCacheData } from "../utils";
 
 export const mediaController = async (request: Request, response: Response) => {
     const {
-        pathname,
-        limit,
-        offset = 0,
-        sorting = { type: 'date', order: 'descending', sortDirectoryFirst: true }
-    }: requestBodyInterface = request.body;
-    if (!validateLimit(limit)) return response.status(400).json({ error: 'Invalid limit' });
+        pathname = '/',
+        limit = '7',
+        offset = '0',
+        type = 'date',
+        order = 'descending',
+        dirFirst = 'true'
+    } = request.query as requestQueryInterface;
 
-    const decodedDir = decodeURIComponent(pathname ?? '/');    // Transforming Encoded URI to string with spaces
-    const navigationPath = decodedDir ? path.join(mediaDir, decodedDir) : mediaDir;
+    // Convert to proper types for logic
+    const numericLimit = parseInt(limit, 10);
+    const numericOffset = parseInt(offset, 10);
+    const isDirFirst = dirFirst === 'true';
 
+    // Validate Limit
+    if (!validateLimit(numericLimit)) return response.status(400).json({ error: 'Invalid limit' });
+
+    const decodedDir = decodeURIComponent(pathname);
+    const navigationPath = path.join(mediaDir, decodedDir);
+
+    // Security: Path Traversal Protection
     const safePath = path.normalize(navigationPath);
-    if (!safePath.startsWith(path.normalize(mediaDir))) return response.status(403).json({ error: 'Forbidden directory access' });
+    if (!safePath.startsWith(path.normalize(mediaDir))) {
+        return response.status(403).json({ error: 'Forbidden directory access' });
+    }
+    
     if (!existsSync(safePath)) return response.status(404).json({ error: "Directory not found" });
 
     try {
-        // Create cache dir if missing
-        if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true })
+        if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
+
+        // 3. Map query params to your sort interface
+        const sorting: sortInterface = { 
+            type: type as any, 
+            order: order as any, 
+            dirFirst: isDirFirst 
+        };
 
         if (!media[decodedDir]) {
             const entries = await fetchMediaEntries(navigationPath);
             setMedia({ [decodedDir]: entries });
-            writeCacheData();   // cache to disk
-            sortEntries(decodedDir, sorting);   // sorting ALWAYS after setMedia()
+            writeCacheData();
+            sortEntries(decodedDir, sorting); 
         } else {
-            // Handle Sorting entries from media state
-            sortEntries(decodedDir, sorting)
-            if (!existsSync(cachingFile)) writeCacheData();   // cache to disk
+            sortEntries(decodedDir, sorting);
+            if (!existsSync(cachingFile)) writeCacheData();
         }
 
-        const { data, hasMore } = await getChunk(decodedDir, limit, offset);
+        // 4. Pass the converted numbers to getChunk
+        const { data, hasMore } = await getChunk(decodedDir, numericLimit, numericOffset);
         response.status(200).json({ data, hasMore });
+
     } catch (error) {
         console.error(`Error scanning directory ${navigationPath}:`, error);
         response.status(500).json({ error: 'Internal Server Error' });
@@ -48,7 +68,7 @@ export const mediaController = async (request: Request, response: Response) => {
 export const selectedMediaController = async (request: Request, response: Response) => {
     try {
         // Destructure id and pathname from the request body
-        const { pathname }: { pathname: string } = request.body;
+        const { pathname = '/' } = request.query as { pathname?: string };
         const { id } = request.params
 
         // Check if id and pathname are provided
@@ -78,22 +98,26 @@ export const selectedMediaController = async (request: Request, response: Respon
 };
 
 export const downloadStreamController = async (request: Request, response: Response) => {
-    const { filePath }: { filePath: string } = request.body
+    const { source } = request.query as { source: string }
 
-    if (!existsSync(filePath)) {
+    if (!existsSync(source)) {
         return response.status(404).send("File not found");
     }
 
-    const stat = statSync(filePath);
+    const stat = statSync(source);
+    const filename = path.basename(source)
+    const extension = path.extname(source) as MediaExtension
+    const filetype = mediaFormats[extension]
     const fileSize = stat.size;
     const range = request.headers.range;
 
     if (!range) {
         response.writeHead(200, {
             "Content-Length": fileSize,
-            "Content-Type": "application/octet-stream",
+            "Content-Disposition": `attachment; filename="${filename}"`,
+            "Content-Type": filetype,
         });
-        createReadStream(filePath).pipe(response);
+        createReadStream(source).pipe(response);
         return;
     }
 
@@ -111,12 +135,13 @@ export const downloadStreamController = async (request: Request, response: Respo
     const chunkSize = end - start + 1;
     response.writeHead(206, {
         "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+        "Content-Disposition": `attachment; filename="${filename}"`,
         "Accept-Ranges": "bytes",
         "Content-Length": chunkSize,
-        "Content-Type": "application/octet-stream",
+        "Content-Type": filetype,
     });
 
-    createReadStream(filePath, { start, end }).pipe(response);
+    createReadStream(source, { start, end }).pipe(response);
 }
 
 export const resetMediaController = (req: Request, res: Response) => {

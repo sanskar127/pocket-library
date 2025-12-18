@@ -43,16 +43,18 @@ export interface ScanImagesInterface {
 type DeviceType = "mobile" | "tablet" | "laptop" | "desktop"
 
 export interface sortInterface {
-  type: 'name' | 'date' | 'size' 
+  type: 'name' | 'date' | 'size'
   order: 'ascending' | 'descending'
-  sortDirectoryFirst: boolean
+  dirFirst: boolean
 }
 
-export interface requestBodyInterface {
-  pathname: string;
-  offset: number;
-  limit: number;
-  sorting: sortInterface
+export interface requestQueryInterface {
+  pathname?: string;
+  offset?: string; // Changed to string for Express compatibility
+  limit?: string;  // Changed to string
+  type?: 'name' | 'date' | 'size';
+  order?: 'ascending' | 'descending';
+  dirFirst?: string; // 'true' or 'false'
 }
 
 export type VideoExtension =
@@ -68,6 +70,27 @@ export type VideoExtension =
   | ".mpg";
 
 export type ImageExtension =
+  | ".jpg"
+  | ".jpeg"
+  | ".png"
+  | ".gif"
+  | ".webp"
+  | ".bmp"
+  | ".tiff"
+  | ".tif"
+  | ".svg";
+
+export type MediaExtension =
+  | ".mp4"
+  | ".mov"
+  | ".avi"
+  | ".mkv"
+  | ".wmv"
+  | ".flv"
+  | ".f4v"
+  | ".webm"
+  | ".mpeg"
+  | ".mpg"
   | ".jpg"
   | ".jpeg"
   | ".png"
