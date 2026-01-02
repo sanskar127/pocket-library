@@ -1,24 +1,37 @@
-import { useGetMediaMutation } from '../api/mediaApi'
+import { useGetMediaQuery } from '../api/mediaApi'
 import { useCallback, useEffect, useState, useRef } from 'react'
 import type { ItemType } from '../types/types'
 import { useLocation } from 'react-router'
 import { getLimit } from '../utils'
+import { useDispatch, useSelector } from 'react-redux'
+import type { AppDispatch, RootState } from '../store/store'
+import { initFilter } from '../features/filterSlice'
 
 const useFetchMedia = () => {
-  const [getMedia, { isLoading, isError }] = useGetMediaMutation()
-  const [isRefreshing, setRefreshing] = useState(false)
   const [data, setData] = useState<ItemType[]>([])
-  const [hasMore, setHasMore] = useState<boolean>(false)
+  const [hasMore, setHasMore] = useState(false)
   const [offset, setOffset] = useState(0)
+  const [isRefreshing, setRefreshing] = useState(false)
 
   const isInitialLoad = useRef(true)
   const { pathname } = useLocation()
-  const { initialLimit, limit } = getLimit()
+  const limit = getLimit(offset)
+
+  const dispatch = useDispatch<AppDispatch>()
+  const { filter, loading } = useSelector((state: RootState) => state.filter)
+  const { data: response, isLoading, isError, refetch } = useGetMediaQuery(
+    { pathname, offset, limit, ...filter },
+    { skip: loading || !filter }
+  )
 
   // Update offset for pagination
   const updateOffset = () => {
     if (hasMore) setOffset(prev => prev + limit)
   }
+
+  useEffect(() => {
+    dispatch(initFilter());
+  }, [dispatch]);
 
   const handleReset = () => {
     if (!isInitialLoad.current) {
@@ -36,32 +49,28 @@ const useFetchMedia = () => {
 
   // Fetch media data
   const fetchData = useCallback(async () => {
+    if (filter === null) return
+
     try {
-      const currentLimit = offset === 0 ? initialLimit : limit
-      const response: { data: ItemType[], hasMore: boolean } = await getMedia({ pathname, offset, limit: currentLimit }).unwrap()
-
-      if (response) {
-        setData(prev => [...prev, ...response.data])
-        setHasMore(response.hasMore)
-      }
-
-    } catch (error) {
-      console.error('Failed to fetch media:', error)
-    }
-  }, [pathname, getMedia, offset])
+      const { data, hasMore } = response
+      setData(prev => [...prev, ...data])
+      setHasMore(hasMore)
+    } catch { console.log() }
+  }, [filter, response])
 
   // Trigger data fetch when the limit changes or initial fetch
   useEffect(() => {
-    // if (limit && initialLimit) {
     fetchData()
-    // }
   }, [fetchData])
 
-  // Handle pull-to-refresh action
+  // Refresh handler
   const handleRefresh = async () => {
     setRefreshing(true)
-    handleReset()
-    await fetchData() // Manually trigger the data fetch again
+    setData([])
+    setHasMore(false)
+    setOffset(0)
+    refetch()
+    await fetchData()
     setRefreshing(false)
   }
 

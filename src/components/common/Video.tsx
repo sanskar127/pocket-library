@@ -13,7 +13,7 @@ const Video: FC<{ details: VideoInterface }> = ({ details }) => {
         {
           thumbnail ? (
             <img
-              src={`http://localhost:3000${thumbnail}`}
+              src={thumbnail}
               alt={`${name} thumbnail`}
               className="bg-black absolute top-0 left-0 w-full h-full object-contain object-center"
             />

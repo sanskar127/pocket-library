@@ -1,17 +1,30 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+// import { filterInterface } from "@/types/types"
 
 export const mediaApi = createApi({
     reducerPath: 'media-api',
-    baseQuery: fetchBaseQuery({baseUrl: 'http://localhost:3000/api'}),
-    endpoints: (builder) => ({
-        getMedia: builder.mutation({
-            query: ({ pathname, offset, limit }: { pathname: string, offset: number, limit: number }) => ({
+    baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
+    endpoints: builder => ({
+        getMedia: builder.query({
+            query: params => ({
                 url: '/media',
-                method: 'POST',
-                body: { pathname, offset, limit }
+                params
+            })
+        }),
+        getSelectedMedia: builder.query({
+            query: ({ id, params }) => ({
+                url: `/media/${id}`,
+                params
+            })
+        }),
+        resetMedia: builder.mutation({
+            query: params => ({
+                url: '/media/reset',
+                method: 'DELETE',
+                params
             })
         })
     })
 })
 
-export const { useGetMediaMutation } = mediaApi
+export const { useGetMediaQuery, useGetSelectedMediaQuery, useResetMediaMutation } = mediaApi

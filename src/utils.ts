@@ -51,12 +51,12 @@ export const formatTime = (time: number): string => {
     : `${minutes}:${paddedSeconds}`;
 };
 
-export const getLimit = () => {
-    if (window.innerWidth < 600) return { initialLimit: 3, limit: 2}
-    else if (window.innerWidth < 767) return { initialLimit: 10, limit: 2}
-    // else if (window.innerWidth < 1279) return { initialLimit: 15, limit: 3}
-    else if (window.innerWidth < 1920) return { initialLimit: 20, limit: 5}
-    else return { initialLimit: 30, limit: 6}
+export const getLimit = (offset: number): number => {
+  if (window.innerWidth < 600) return offset === 0 ? 3 : 2
+  else if (window.innerWidth < 767) return offset === 0 ? 10 : 2
+  else if (window.innerWidth < 1279) return offset === 0 ? 15 : 3
+  else if (window.innerWidth < 1920) return offset === 0 ? 20 : 5
+  else return offset === 0 ? 30 : 6
 }
 
 function getGroupLabel(modified: string | Date): string {

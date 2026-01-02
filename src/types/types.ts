@@ -1,4 +1,3 @@
-import type { UseInfiniteQueryResult } from "@tanstack/react-query"
 
 export interface VideoInterface {
   id: string;
@@ -83,6 +82,8 @@ export interface UseFetchMediaResult {
   isError: boolean
 }
 
-export interface UseFetchMediaInterface {
-  (): UseInfiniteQueryResult<ResponseInterface, Error>
+export interface filterInterface {
+  type: 'name' | 'date' | 'size' 
+  order: 'ascending' | 'descending'
+  dirFirst: boolean
 }

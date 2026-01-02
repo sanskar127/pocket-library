@@ -1,9 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { setupListeners } from '@reduxjs/toolkit/query'
 import { mediaApi } from "../api/mediaApi"
+import filterReducer from "../features/filterSlice"
+
 export const store = configureStore({
   reducer: {
-    [mediaApi.reducerPath]: mediaApi.reducer
+    [mediaApi.reducerPath]: mediaApi.reducer,
+    filter: filterReducer,
   },
   middleware: getDefaultMiddleware => 
     getDefaultMiddleware().concat(mediaApi.middleware)
